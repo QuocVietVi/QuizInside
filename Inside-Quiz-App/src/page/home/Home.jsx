@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "./Home.css";
 import Button from "@mui/material/Button";
+import HomeContent from '../homeContent/HomeContent'
 
 function Home() {
     const [pin, setPin] = useState("");
@@ -18,16 +19,16 @@ function Home() {
 
     const categories = [
         { label: "Home", icon: "/icon/iconHome.png" },
-        { label: "Appota", icon: "/icon/iconAppota.png" },
-        { label: "Sport", icon: "/icon/iconSport.png" },
-        { label: "Movie", icon: "/icon/iconMovie.png" },
-        { label: "Game", icon: "/icon/iconGame.png" },
+        { label: "Appota Learn", icon: "/icon/iconAppota.png" },
+        { label: "Sports", icon: "/icon/iconSport.png" },
+        { label: "Movies", icon: "/icon/iconMovie.png" },
+        { label: "Games", icon: "/icon/iconGame.png" },
         { label: "Geography", icon: "/icon/iconGeography.png" },
         { label: "History", icon: "/icon/iconHistory.png" },
     ];
     const [activeIndex, setActiveIndex] = useState(0);
     return (
-        <div>
+        <div className="home">
             <div className="navbar-container">
                 {/* Navbar chính */}
                 <div className="navbar">
@@ -94,7 +95,10 @@ function Home() {
                     ))}
                 </div>
             </div>
+            <div>
+                <HomeContent />
 
+            </div>
         </div>
     );
 }

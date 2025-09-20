@@ -1,7 +1,7 @@
 /* Navbar container */
 
 .navbar-container {
-    position: fixed;
+    /* position: fixed; */
     /* cả cụm dính trên cùng */
     top: 0;
     left: 0;
@@ -139,50 +139,56 @@
 }
 
 .category {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
 }
 
 /* Icon */
 .category img {
-  width: 32px;
-  height: 32px;
-  transition: transform 0.3s ease;
+    width: 32px;
+    height: 32px;
+    transition: transform 0.3s ease;
 }
 
 /* Text */
 .category span {
-  margin-top: 4px;
-  font-size: 13px;
-  color: #333; /* xám đậm */
-  font-weight: 600;
-  transition: color 0.3s ease;
-  padding-bottom: 4px;
+    margin-top: 4px;
+    font-size: 13px;
+    color: #333;
+    /* xám đậm */
+    font-weight: 600;
+    transition: color 0.3s ease;
+    padding-bottom: 4px;
 }
 
 /* Hover và trạng thái active */
 .category:hover span,
 .category.active span {
-  color: #000;
-  border-bottom: 3px solid #000;
-  border-radius: 2px; /* bo tròn */
+    color: #000;
+    -webkit-text-stroke: 0.8px black;
+    border-bottom: 4px solid #000;
+    border-radius: 3px;
+    /* bo tròn */
 }
 
 /* Hover icon nảy */
 .category:hover img {
-  animation: bounce 0.6s infinite;
+    animation: bounce 0.6s infinite;
 }
 
 /* Bounce animation */
 @keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
 }
 
 

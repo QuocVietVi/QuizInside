@@ -1,0 +1,115 @@
+.home-content {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    gap: 20px;
+    padding-top: 5px;
+    flex-wrap: wrap;
+    /* khi màn nhỏ thì tự xuống hàng */
+}
+
+/* Box chung */
+.left-box,
+.right-box {
+    flex: 1;
+    /* max-height: 300px; */
+    height: 39vh;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px;
+    border-radius: 12px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* Màu nền */
+.left-box {
+    background-color: #21718b;
+    /* xanh nước biển */
+}
+
+.right-box {
+    background-color: #3da7a7;
+}
+
+/* Character tự co */
+.appota-character {
+    width: clamp(100px, 35%, 250px);
+    /* luôn scale theo % nhưng không nhỏ hơn 100px, không lớn hơn 400px */
+    height: auto;
+}
+
+.appota-character2 {
+    width: clamp(80px, 25%, 180px);
+    height: auto;
+}
+
+/* Text responsive */
+.left-text {
+    margin-left: 80px;
+    max-width: 42%;
+    /* giữ tỉ lệ text */
+    max-height: 260px;
+}
+
+.right-text {
+    margin-left: 120px;
+    max-width: 42%;
+    /* giữ tỉ lệ text */
+    max-height: 260px;
+}
+
+/* Responsive font */
+.left-text h1,
+.right-text h1 {
+    margin: 0 0 10px 0;
+    font-size: clamp(24px, 3vw, 48px);
+    font-weight: 900;
+    color: rgb(255, 244, 229);
+    -webkit-text-stroke: 2px rgb(255, 244, 229);
+}
+
+.left-text p,
+.right-text p {
+    margin: 0 0 20px 0;
+    font-size: clamp(14px, 1.2vw, 19px);
+    color: rgb(255, 244, 229);
+    -webkit-text-stroke: 0.5px rgb(255, 244, 229);
+}
+
+/* Quiz cards */
+.quiz-card {
+    width: 250px;
+    margin: 10px;
+}
+
+.cards-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Bounce animation */
+@keyframes bounceBtn {
+
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-10px);
+    }
+
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+.bounce-button {
+    animation: bounceBtn 1.5s;
+}
