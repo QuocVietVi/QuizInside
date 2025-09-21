@@ -231,10 +231,13 @@ body {
         border-radius: 15px;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        justify-self: center;
         width: 90%;
+        max-width: 370px;
         height: 80px;
+        margin: 10px auto;
+        gap: 10px;
+        padding: 0 10px;
+        box-sizing: border-box;
     }
 
     .join-text {

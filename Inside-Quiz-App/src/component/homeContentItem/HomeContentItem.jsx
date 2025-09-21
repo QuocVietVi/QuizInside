@@ -2,9 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import "./HomeContentItem.css";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import CardMedia from "@mui/material/CardMedia";
-import { CardActionArea, ListItem } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import { CardActionArea } from "@mui/material";
+import { styled } from "@mui/material/styles";
+
 const CustomCardActionArea4 = styled(CardActionArea)(({ theme }) => ({
     height: "150px",
     "&.Mui-focusVisible": {
@@ -13,14 +13,13 @@ const CustomCardActionArea4 = styled(CardActionArea)(({ theme }) => ({
     "&:focus": {
         outline: "none",
     },
-    '@media (max-width: 648px)': {
-        height: "160px",
+    "@media (max-width: 648px)": {
+        height: "100px", // mobile
     },
-    '@media (max-width: 648px)': {
-    height: "100px", // mobile cũng auto
-  },
 }));
+
 function HomeContentItem({ quizList, title }) {
+    const BASE_URL = import.meta.env.BASE_URL; // dùng BASE_URL để deploy GitHub Pages
     const quizzes = quizList || [];
     const containerRef = useRef(null);
     const [itemsPerPage, setItemsPerPage] = useState(3);
@@ -33,12 +32,11 @@ function HomeContentItem({ quizList, title }) {
         const updateItems = () => {
             if (containerRef.current) {
                 const containerWidth = containerRef.current.offsetWidth;
-                const containerPadding = 40; // 10px left + 10px right
-                const usableWidth = containerRef.current.offsetWidth - containerPadding;
+                const containerPadding = 40;
+                const usableWidth = containerWidth - containerPadding;
                 const count = Math.max(MIN_ITEMS, Math.floor(usableWidth / 250));
                 setItemsPerPage(count);
-                setItemWidth(usableWidth / count); // width mỗi item trừ padding container
-
+                setItemWidth(usableWidth / count);
                 setPage(0);
             }
         };
@@ -52,13 +50,11 @@ function HomeContentItem({ quizList, title }) {
     const handleNext = () => setPage((prev) => Math.min(prev + 1, maxPage));
     const handlePrev = () => setPage((prev) => Math.max(prev - 1, 0));
 
-    // Tính translateX, nếu page cuối chỉ scroll đủ item còn lại
     const translateX = (() => {
         const remainingItems = quizzes.length - page * itemsPerPage;
         if (remainingItems >= itemsPerPage) {
             return page * itemsPerPage * itemWidth;
         } else {
-            // số item còn lại < itemsPerPage → scroll vừa đủ
             return (quizzes.length - itemsPerPage) * itemWidth;
         }
     })();
@@ -81,31 +77,29 @@ function HomeContentItem({ quizList, title }) {
                         style={{ flex: `0 0 ${itemWidth}px` }}
                     >
                         <Card>
-
-                            <CustomCardActionArea4 style={{ display: "flex", flexDirection: "column" }}>
+                            <CustomCardActionArea4
+                                style={{ display: "flex", flexDirection: "column" }}
+                            >
                                 <img
                                     src={quiz.img}
                                     alt={quiz.name}
                                     className="quiz-card-img"
-
-                                    
                                 />
-                                <CardContent style={{ alignSelf: 'flex-start' }}>
+                                <CardContent style={{ alignSelf: "flex-start" }}>
                                     <h3>{quiz.name}</h3>
                                 </CardContent>
-
                             </CustomCardActionArea4>
+
                             <div className="quiz-other-info">
                                 <div className="quiz-author">
-                                    <img src="/image/author.png" alt="" />
+                                    <img src={`${BASE_URL}image/author.png`} alt="author" />
                                     <p>{quiz.author}</p>
                                 </div>
                                 <div className="quiz-star">
-                                        <p>5</p>
-                                        <img src="/image/starIcon.png" alt="" />
-                                    </div>
+                                    <p>5</p>
+                                    <img src={`${BASE_URL}image/starIcon.png`} alt="star" />
+                                </div>
                             </div>
-
                         </Card>
                     </div>
                 ))}
@@ -113,15 +107,14 @@ function HomeContentItem({ quizList, title }) {
 
             {page > 0 && (
                 <button className="nav-btn left" onClick={handlePrev}>
-                    <img src="/image/arrowLeft.png" alt="Prev" />
+                    <img src={`${BASE_URL}image/arrowLeft.png`} alt="Prev" />
                 </button>
             )}
             {page < maxPage && (
                 <button className="nav-btn right" onClick={handleNext}>
-                    <img src="/image/arrowRight.png" alt="Next" />
+                    <img src={`${BASE_URL}image/arrowRight.png`} alt="Next" />
                 </button>
             )}
-
         </div>
     );
 }

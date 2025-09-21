@@ -169,6 +169,7 @@
     scroll-behavior: smooth;
     padding-bottom: 10px;
     width: 100% !important;
+    gap:10px;
   }
 
   .quiz-card-img {
