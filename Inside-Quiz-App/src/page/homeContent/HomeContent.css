@@ -113,3 +113,48 @@
 .bounce-button {
     animation: bounceBtn 1.5s;
 }
+
+@media (max-width: 768px) {
+    .home-content {
+        flex-direction: column;
+        /* từ row sang column */
+        align-items: center;
+        /* căn giữa */
+        gap: 20px;
+        /* khoảng cách giữa 2 box */
+        padding: 10px;
+        /* padding vừa phải */
+    }
+
+    .left-box,
+    .right-box {
+        width: 100%;
+        /* chiếm hết chiều ngang */
+        height: auto;
+        /* cao tự động theo nội dung */
+        flex: none;
+        /* tắt flex-grow */
+        padding: 15px;
+    }
+
+    .left-text,
+    .right-text {
+        margin-left: 0;
+        max-height: 260px;
+    }
+
+    .left-text {
+        max-width:80%;
+    }
+
+    .right-text {
+        max-width: 64%;
+    }
+
+    .appota-character,
+    .appota-character2 {
+        margin: 0 auto;
+        /* căn giữa hình ảnh */
+        display: block;
+    }
+}

@@ -94,6 +94,16 @@ function Home() {
                         </div>
                     ))}
                 </div>
+                   <div className="navbar-join-mobile">
+                        <span className="join-text">Join Game? Enter PIN:</span>
+                        <input
+                            type="text"
+                            placeholder="123 456"
+                            className="join-input"
+                            value={pin}
+                            onChange={handlePinChange}
+                        />
+                    </div>
             </div>
             <div>
                 <HomeContent />

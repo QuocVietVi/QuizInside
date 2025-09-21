@@ -140,7 +140,9 @@ export default function HomeContent() {
                 <HomeContentItem quizList={quizzes} title="Popular quizzes"/>
                 <HomeContentItem quizList={quizzes2} title="Animals"/>
                 <HomeContentItem quizList={quizzes3} title="Random selection"/>
-                
+                <HomeContentItem quizList={quizzes3} title="Random selection"/>
+                <HomeContentItem quizList={quizzes3} title="Random selection"/>
+                <HomeContentItem quizList={quizzes3} title="Random selection"/>
             </div>
         </div>
 

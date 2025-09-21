@@ -16,8 +16,11 @@ const CustomCardActionArea4 = styled(CardActionArea)(({ theme }) => ({
     '@media (max-width: 648px)': {
         height: "160px",
     },
+    '@media (max-width: 648px)': {
+    height: "100px", // mobile cũng auto
+  },
 }));
-function HomeContentItem({ quizList , title}) {
+function HomeContentItem({ quizList, title }) {
     const quizzes = quizList || [];
     const containerRef = useRef(null);
     const [itemsPerPage, setItemsPerPage] = useState(3);
@@ -83,18 +86,25 @@ function HomeContentItem({ quizList , title}) {
                                 <img
                                     src={quiz.img}
                                     alt={quiz.name}
-                                    style={{
-                                        width: "100%",    // full width
-                                        height: "90%",   // tự động theo tỉ lệ
-                                        objectFit: "cover",
-                                    }}
+                                    className="quiz-card-img"
+
+                                    
                                 />
                                 <CardContent style={{ alignSelf: 'flex-start' }}>
                                     <h3>{quiz.name}</h3>
                                 </CardContent>
 
                             </CustomCardActionArea4>
-                            <p>{quiz.author}</p>
+                            <div className="quiz-other-info">
+                                <div className="quiz-author">
+                                    <img src="/image/author.png" alt="" />
+                                    <p>{quiz.author}</p>
+                                </div>
+                                <div className="quiz-star">
+                                        <p>5</p>
+                                        <img src="/image/starIcon.png" alt="" />
+                                    </div>
+                            </div>
 
                         </Card>
                     </div>
