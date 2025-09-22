@@ -60,7 +60,7 @@ function HomeContentItem({ quizList, title }) {
     const translateX = (() => {
         if (!containerRef.current) return 0;
 
-        const maxTranslate = totalWidth - containerWidth + 12; // max scroll
+        const maxTranslate = totalWidth - containerWidth + 15; // max scroll
         let tx = page * itemsPerPage * itemWidth;
 
         // giới hạn không vượt quá maxTranslate

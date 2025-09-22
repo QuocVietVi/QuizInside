@@ -13,7 +13,7 @@
 .right-box {
     flex: 1;
     /* max-height: 300px; */
-    height: 39vh;
+    height: auto;
     display: flex;
     align-items: center;
     justify-content: flex-start;
@@ -47,17 +47,30 @@
 
 /* Text responsive */
 .left-text {
-    margin-left: 80px;
-    max-width: 42%;
-    /* giữ tỉ lệ text */
-    max-height: 260px;
+    margin-left: 40px;
+    height: auto;
+    max-height: 100%;
+    display: flex;
+    /* bật flexbox bên trong text box */
+    flex-direction: column;
+    /* sắp xếp theo cột */
+    justify-content: center;
+    /* căn giữa theo chiều dọc */
 }
 
+
 .right-text {
-    margin-left: 150px;
-    max-width: 42%;
+    margin-left: 80px;
+    max-width: 54%;
     /* giữ tỉ lệ text */
-    max-height: 260px;
+    height: 100%;
+    max-height: 100%;
+    display: flex;
+    /* bật flexbox bên trong text box */
+    flex-direction: column;
+    /* sắp xếp theo cột */
+    justify-content: center;
+    /* căn giữa theo chiều dọc */
 }
 
 /* Responsive font */
@@ -70,9 +83,14 @@
     -webkit-text-stroke: 2px rgb(255, 244, 229);
 }
 
+.right-text-des {
+    padding-bottom: 10px;
+
+}
+
 .left-text p,
 .right-text p {
-    margin: 0 0 20px 0;
+    margin: 0 0 0px 0;
     font-size: clamp(14px, 1.2vw, 19px);
     color: rgb(255, 244, 229);
     -webkit-text-stroke: 0.5px rgb(255, 244, 229);
@@ -88,6 +106,37 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+}
+
+.leaderboard-top4 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, auto);
+    gap: 15px;
+    justify-items: center;
+    align-items: center;
+    padding: 10px 0px;
+    padding-bottom: 0px;
+    /* dùng toàn bộ chiều ngang của box cha */
+    max-width: 350px;
+}
+
+.shop-home {
+    gap: 15px;
+    justify-items: center;
+    align-items: center;
+    padding: 10px;
+    width: 350px;
+}
+
+.shop-home span {
+    font-weight: bold;
+    color: rgb(255, 238, 216);
+}
+
+.shop-home-item img {
+    width: 80px;
+    height: auto;
 }
 
 /* Bounce animation */
@@ -112,6 +161,34 @@
 
 .bounce-button {
     animation: bounceBtn 1.5s;
+}
+
+@media (min-width: 1600px) {
+    .left-text {
+        margin-left: 100px;
+    }
+
+    .right-text {
+        margin-left: 100px;
+    }
+}
+
+@media (max-width: 1200px) {
+
+    .l4 {
+        display: none !important;
+    }
+
+    .leaderboard-top4 {
+        display: grid;
+        grid-template-columns: none;
+        grid-template-rows: none;
+        gap: 5px;
+        justify-items: center;
+        align-items: center;
+        width: auto;
+        padding: 0px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -144,7 +221,7 @@
     }
 
     .left-text {
-        max-width:80%;
+        max-width: 80%;
     }
 
     .right-text {
@@ -156,5 +233,19 @@
         margin: 0 auto;
         /* căn giữa hình ảnh */
         display: block;
+    }
+
+    .leaderboard-top4 {
+        display: grid;
+        grid-template-columns: none;
+        grid-template-rows: none;
+        gap: 5px;
+        justify-items: center;
+        align-items: center;
+        width: fit-content;
+    }
+
+    .leaderboard-top4 .l4 {
+        display: none;
     }
 }

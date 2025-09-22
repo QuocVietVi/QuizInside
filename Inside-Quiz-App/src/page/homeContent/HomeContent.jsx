@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./HomeContent.css";
 import Button from "@mui/material/Button";
-import { useEffect, useState } from "react";
-import HomeContentItem from '../../component/homeContentItem/HomeContentItem'
+import HomeContentItem from "../../component/homeContentItem/HomeContentItem";
+import LeaderBoardItem from "../../component/leaderBoardItem/LeaderBoardItem";
+
 
 export default function HomeContent() {
     const quizzes = [
@@ -49,7 +50,10 @@ export default function HomeContent() {
         { name: "Penguin", author: "Quoc Viet Vi", img: `${import.meta.env.BASE_URL}image/quiz8.png` },
         { name: "Turtle Swim Swim", author: "Quoc Viet Vi", img: `${import.meta.env.BASE_URL}image/quiz11.png` },
     ];
-
+    
+    const leftTextRef = useRef(null);
+    const leftBoxRef = useRef(null);
+    const [screenWidth, setScreenWidth] = useState(window.innerWidth);
     const [isBouncing, setIsBouncing] = useState(false);
 
     useEffect(() => {
@@ -60,26 +64,40 @@ export default function HomeContent() {
 
         return () => clearInterval(interval);
     }, []);
+ useEffect(() => {
+        const handleResize = () => setScreenWidth(window.innerWidth);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     return (
         <div>
             <div className="home-content">
                 {/* Bên trái */}
-                <div className="left-box">
+                <div className="left-box" ref={leftBoxRef}>
                     <img
                         src={`${import.meta.env.BASE_URL}image/appotaCharacter4.png`}
                         alt="Appota Character"
                         className="appota-character"
                     />
-                    <div className="left-text">
-                        <h1>Create a quiz</h1>
-                        <p>Play with 100 participants and enjoy a great time!</p>
+                    <div className="left-text" ref={leftTextRef}>
+
+                        <h1>Leaderboard</h1>
+                        <div className="leaderboard-top4">
+                            <LeaderBoardItem avatar={`${import.meta.env.BASE_URL}image/author.png`} icon={`${import.meta.env.BASE_URL}image/top1.png`} name={"Quoc Viet Vi"} isTop3={true} />
+                            <LeaderBoardItem avatar={`${import.meta.env.BASE_URL}image/author2.png`} icon={`${import.meta.env.BASE_URL}image/top2.png`} name={"Quoc Viet Vi"} isTop3={true} />
+                            <LeaderBoardItem className="l3" avatar={`${import.meta.env.BASE_URL}image/author3.png`} icon={`${import.meta.env.BASE_URL}image/top3.png`} name={"Quoc Viet Vi"} isTop3={true} />
+                            <LeaderBoardItem className="l4" avatar={`${import.meta.env.BASE_URL}image/author4.png`} icon={`${import.meta.env.BASE_URL}image/top1.png`} name={"Quoc Viet Vi"} rank={4} isTop3={false} />
+                        </div>
+
                         <Button
                             variant="contained"
                             className={isBouncing ? "bounce-button" : ""}
                             sx={{
                                 borderRadius: "25px",
-                                padding: "8px 24px",
+                                display: "block",
+                                margin: "30px auto 0 auto",
+                                marginBottom: "0px",
                                 fontWeight: 700,
                                 fontSize: "17px",
                                 textTransform: "none",
@@ -94,8 +112,11 @@ export default function HomeContent() {
                                 "&:focus": {
                                     outline: "none",
                                 },
+                                "@media (max-width: 648px)": {
+                                    marginTop: "5px",
+                                },
                             }}>
-                            Create Quiz
+                            View All
                         </Button>
                     </div>
                 </div>
@@ -108,14 +129,17 @@ export default function HomeContent() {
                         className="appota-character2"
                     />
                     <div className="right-text">
-                        <h1>Mini Game</h1>
-                        <p>Play with 100 participants and enjoy a great time!</p>
+                        <h1>Shop tích lũy</h1>
+                        <div className="right-text-des"></div>
+                        <p>Dùng số điểm tích lũy được và đổi những phần quà hấp dẫn</p>
+                        <p>(Điểm của bạn: 100)</p>
                         <Button
                             variant="contained"
                             className={isBouncing ? "bounce-button" : ""}
                             sx={{
                                 borderRadius: "25px",
-                                padding: "8px 24px",
+                                display: "block",
+                                margin: "30px auto 0 auto",
                                 fontWeight: 700,
                                 fontSize: "17px",
                                 textTransform: "none",
@@ -138,12 +162,12 @@ export default function HomeContent() {
             </div>
 
             <div>
-                <HomeContentItem quizList={quizzes} title="Popular quizzes"/>
-                <HomeContentItem quizList={quizzes2} title="Animals"/>
-                <HomeContentItem quizList={quizzes3} title="Random selection"/>
-                <HomeContentItem quizList={quizzes3} title="Random selection"/>
-                <HomeContentItem quizList={quizzes3} title="Random selection"/>
-                <HomeContentItem quizList={quizzes3} title="Random selection"/>
+                <HomeContentItem quizList={quizzes} title="Popular quizzes" />
+                <HomeContentItem quizList={quizzes2} title="Animals" />
+                <HomeContentItem quizList={quizzes3} title="Random selection" />
+                <HomeContentItem quizList={quizzes3} title="Random selection" />
+                <HomeContentItem quizList={quizzes3} title="Random selection" />
+                <HomeContentItem quizList={quizzes3} title="Random selection" />
             </div>
         </div>
     );
