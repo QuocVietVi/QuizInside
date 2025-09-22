@@ -25,16 +25,20 @@ function HomeContentItem({ quizList, title }) {
     const [itemsPerPage, setItemsPerPage] = useState(3);
     const [page, setPage] = useState(0);
     const [itemWidth, setItemWidth] = useState(0);
+    const [containerWidth, setContainerWidth] = useState(0);
 
     const MIN_ITEMS = 3;
 
     useEffect(() => {
         const updateItems = () => {
             if (containerRef.current) {
-                const containerWidth = containerRef.current.offsetWidth;
+                const cw = containerRef.current.offsetWidth;
+                setContainerWidth(cw);
+
                 const containerPadding = 40;
-                const usableWidth = containerWidth - containerPadding;
+                const usableWidth = cw - containerPadding;
                 const count = Math.max(MIN_ITEMS, Math.floor(usableWidth / 250));
+
                 setItemsPerPage(count);
                 setItemWidth(usableWidth / count);
                 setPage(0);
@@ -45,18 +49,22 @@ function HomeContentItem({ quizList, title }) {
         return () => window.removeEventListener("resize", updateItems);
     }, []);
 
-    const maxPage = Math.ceil(quizzes.length / itemsPerPage) - 1;
+    const totalWidth = quizzes.length * itemWidth;
+    const wrapperWidth = Math.max(totalWidth, containerWidth);
+
+    const maxPage = Math.max(0, Math.ceil(quizzes.length / itemsPerPage) - 1);
 
     const handleNext = () => setPage((prev) => Math.min(prev + 1, maxPage));
     const handlePrev = () => setPage((prev) => Math.max(prev - 1, 0));
 
     const translateX = (() => {
-        const remainingItems = quizzes.length - page * itemsPerPage;
-        if (remainingItems >= itemsPerPage) {
-            return page * itemsPerPage * itemWidth;
-        } else {
-            return (quizzes.length - itemsPerPage) * itemWidth;
-        }
+        if (!containerRef.current) return 0;
+
+        const maxTranslate = totalWidth - containerWidth + 12; // max scroll
+        let tx = page * itemsPerPage * itemWidth;
+
+        // giới hạn không vượt quá maxTranslate
+        return Math.min(tx, Math.max(0, maxTranslate));
     })();
 
     return (
@@ -66,8 +74,9 @@ function HomeContentItem({ quizList, title }) {
             <div
                 className="quiz-wrapper"
                 style={{
-                    width: `${quizzes.length * itemWidth}px`,
+                    width: `${wrapperWidth}px`,
                     transform: `translateX(-${translateX}px)`,
+                    justifyContent: totalWidth < containerWidth ? "center" : "flex-start",
                 }}
             >
                 {quizzes.map((quiz, index) => (
