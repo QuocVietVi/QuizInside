@@ -4,7 +4,7 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import { CardActionArea } from "@mui/material";
 import { styled } from "@mui/material/styles";
-
+import { useNavigate } from "react-router-dom";
 const CustomCardActionArea4 = styled(CardActionArea)(({ theme }) => ({
     height: "150px",
     "&.Mui-focusVisible": {
@@ -26,6 +26,7 @@ function HomeContentItem({ quizList, title }) {
     const [page, setPage] = useState(0);
     const [itemWidth, setItemWidth] = useState(0);
     const [containerWidth, setContainerWidth] = useState(0);
+const navigate = useNavigate();
 
     const MIN_ITEMS = 3;
 
@@ -88,6 +89,7 @@ function HomeContentItem({ quizList, title }) {
                         <Card>
                             <CustomCardActionArea4
                                 style={{ display: "flex", flexDirection: "column" }}
+                                onClick={() => navigate("/gameplay")}
                             >
                                 <img
                                     src={quiz.img}

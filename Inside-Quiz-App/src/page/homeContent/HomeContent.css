@@ -23,6 +23,10 @@
     overflow: hidden;
 }
 
+.right-text-des {
+    max-width: 320px;
+}
+
 /* Màu nền */
 .left-box {
     background-color: #21718b;
@@ -84,13 +88,11 @@
 }
 
 .right-text-des {
-    padding-bottom: 10px;
 
 }
 
 .left-text p,
 .right-text p {
-    margin: 0 0 0px 0;
     font-size: clamp(14px, 1.2vw, 19px);
     color: rgb(255, 244, 229);
     -webkit-text-stroke: 0.5px rgb(255, 244, 229);
@@ -169,7 +171,7 @@
     }
 
     .right-text {
-        margin-left: 100px;
+        margin-left: 140px;
     }
 }
 
@@ -216,15 +218,20 @@
 
     .left-text,
     .right-text {
-        margin-left: 0;
         max-height: 260px;
     }
 
+    .right-text p {
+        font-size: 12px;
+    }
+
     .left-text {
+        width: 175px;
         max-width: 80%;
     }
 
     .right-text {
+        width: 175px;
         max-width: 64%;
     }
 
@@ -235,6 +242,8 @@
         display: block;
     }
 
+
+
     .leaderboard-top4 {
         display: grid;
         grid-template-columns: none;
@@ -243,6 +252,8 @@
         justify-items: center;
         align-items: center;
         width: fit-content;
+        padding: 0px;
+
     }
 
     .leaderboard-top4 .l4 {

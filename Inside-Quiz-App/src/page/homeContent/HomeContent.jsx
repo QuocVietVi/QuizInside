@@ -50,7 +50,7 @@ export default function HomeContent() {
         { name: "Penguin", author: "Quoc Viet Vi", img: `${import.meta.env.BASE_URL}image/quiz8.png` },
         { name: "Turtle Swim Swim", author: "Quoc Viet Vi", img: `${import.meta.env.BASE_URL}image/quiz11.png` },
     ];
-    
+
     const leftTextRef = useRef(null);
     const leftBoxRef = useRef(null);
     const [screenWidth, setScreenWidth] = useState(window.innerWidth);
@@ -64,7 +64,7 @@ export default function HomeContent() {
 
         return () => clearInterval(interval);
     }, []);
- useEffect(() => {
+    useEffect(() => {
         const handleResize = () => setScreenWidth(window.innerWidth);
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
@@ -130,9 +130,11 @@ export default function HomeContent() {
                     />
                     <div className="right-text">
                         <h1>Shop tích lũy</h1>
-                        <div className="right-text-des"></div>
-                        <p>Dùng số điểm tích lũy được và đổi những phần quà hấp dẫn</p>
-                        <p>(Điểm của bạn: 100)</p>
+                        <div className="right-text-des">
+                            <p>Dùng số điểm tích lũy được và đổi những phần quà hấp dẫn</p>
+                            <p>(Điểm của bạn: 100)</p>
+                        </div>
+
                         <Button
                             variant="contained"
                             className={isBouncing ? "bounce-button" : ""}
@@ -154,8 +156,11 @@ export default function HomeContent() {
                                 "&:focus": {
                                     outline: "none",
                                 },
+                                "@media (max-width: 648px)": {
+                                    marginTop: "5px",
+                                },
                             }}>
-                            Play Game
+                            View all
                         </Button>
                     </div>
                 </div>
