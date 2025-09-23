@@ -8,6 +8,8 @@ import ZoomInMapIcon from '@mui/icons-material/ZoomInMap';
 import { styled } from "@mui/material/styles";
 import Button from "@mui/material/Button";
 import RoomCreate from "../roomCreate/RoomCreate";
+import QuizItemGameplay from "../../component/quizItemGamePlay/QuizItemGameplay";
+
 const CustomerLink = styled(Link)(({ theme }) => ({
     color: "rgb(255, 235, 216)",
     '&:hover': {
@@ -62,6 +64,8 @@ export default function Gameplay() {
     const [screenWidth, setScreenWidth] = useState(window.innerWidth);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
+    const [startGame, setStartGame] = useState(false); // <-- state để bật Quiz
+
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen();
@@ -70,14 +74,12 @@ export default function Gameplay() {
         }
     };
 
-    // Lắng nghe thay đổi fullscreen
     useEffect(() => {
-        const handleChange = () => {
-            setIsFullscreen(!!document.fullscreenElement);
-        };
+        const handleChange = () => setIsFullscreen(!!document.fullscreenElement);
         document.addEventListener("fullscreenchange", handleChange);
         return () => document.removeEventListener("fullscreenchange", handleChange);
     }, []);
+
     useEffect(() => {
         const handleResize = () => setScreenWidth(window.innerWidth);
         window.addEventListener("resize", handleResize);
@@ -89,12 +91,7 @@ export default function Gameplay() {
             {/* HEADER */}
             <header className="header">
                 <div className="header-left">
-                    <img
-                        src={`${import.meta.env.BASE_URL}logo/logo.png`}
-                        alt="Logo"
-                        className="logo"
-                    />
-                    {/* <span>{screenWidth}</span> */}
+                    <img src={`${import.meta.env.BASE_URL}logo/logo.png`} alt="Logo" className="logo" />
                     <span className="room-code">PIN: {roomCode}</span>
                     <img className="userIcon" src={`${import.meta.env.BASE_URL}icon/userIcon.png`} alt="" />
                     <span className="player-count">{players.length}</span>
@@ -106,7 +103,20 @@ export default function Gameplay() {
                     </button>
                 </div>
             </header>
-            <RoomCreate roomCode={roomCode} players={players}/>
+
+            {/* Nội dung chính */}
+            {!startGame ? (
+                <RoomCreate
+                    roomCode={roomCode}
+                    players={players}
+                    onStart={() => setStartGame(true)} // <-- truyền function bật Quiz
+                />
+            ) : (
+                <QuizItemGameplay
+                    question="What is the capital of France?"
+                    answers={["Paris", "London", "Berlin", "Madrid"]}
+                />
+            )}
         </div>
     );
 }

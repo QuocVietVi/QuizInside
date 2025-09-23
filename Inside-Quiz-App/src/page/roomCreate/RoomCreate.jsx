@@ -14,7 +14,7 @@ const CustomerLink = styled(Link)(({ theme }) => ({
     },
 }));
 
-export default function RoomCreate({ roomCode, players }) {
+export default function RoomCreate({ roomCode, players, onStart }) {
     const [copied, setCopied] = useState(false);
 
     const copyRoomCode = () => {
@@ -93,6 +93,7 @@ export default function RoomCreate({ roomCode, players }) {
                             <Button
                                 variant="contained"
                                 sx={{
+                                    
                                     borderRadius: "20px",
                                     fontWeight: 700,
                                     fontSize: "16px",
@@ -110,6 +111,7 @@ export default function RoomCreate({ roomCode, players }) {
                                         outline: "none",
                                     },
                                 }}
+                                onClick={onStart}
                             >
                                 Start Game
                             </Button>

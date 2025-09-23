@@ -69,8 +69,8 @@ const navigate = useNavigate();
     })();
 
     return (
-        <div className="quiz-container" ref={containerRef}>
-            <span className="quiz-container-title">{title}</span>
+        <div className="quiz-container-home" ref={containerRef}>
+            <span className="quiz-container-home-title">{title}</span>
 
             <div
                 className="quiz-wrapper"
