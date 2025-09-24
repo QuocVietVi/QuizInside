@@ -13,13 +13,18 @@ body {
   padding-bottom: 0;
 }
 
+.header .logo {
+  width: 220px;
+  height: auto;
+}
+
 .header {
   flex-shrink: 0;
   /* cố định header */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 0px 16px;
   background: #1a3849;
 }
 
@@ -52,257 +57,19 @@ body {
   color: white;
   border-radius: 6px;
   cursor: pointer;
-  outline: none; /* focus không viền */
+  outline: none;
+  /* focus không viền */
 }
+
 .zoom-btn:focus {
   outline: none;
-}
-/* Main content */
-.main-content {
-  display: flex;
-  flex: 1;
-  padding: 20px 200px;
-  gap: 20px;
-}
-
-/* Gameplay Box */
-.gameplay-box {
-  flex: 2;
-  background: #fafafa;
-  border-radius: 18px;
-  display: flex;
-  flex-direction: column;
-}
-
-.gameplay-header {
-  display: flex;
-  justify-content: space-between;
-  /* 3 phần cách đều */
-  align-items: center;
-  padding: 12px;
-  border-radius: 18px;
-  border-bottom-right-radius: 0px;
-  border-bottom-left-radius: 0px;
-  background: #1a3849;
-  max-height: 150px;
-}
-
-.gameplay-header .header-left,
-.gameplay-header .header-center,
-.gameplay-header .header-right {
-  flex: 1;
-  /* mỗi phần chiếm 1/3 */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.gameplay-header .header-left {
-  align-items: flex-start;
-  /* logo sát trái */
-}
-
-.gameplay-header .header-right {
-  align-items: flex-end;
-  /* info sát phải */
-}
-
-.gameplay-header .room-code {
-  font-size: 38px;
-  font-weight: bold;
-  color: rgb(253, 238, 224);
-  -webkit-text-stroke: 1px rgb(253, 238, 224);
-  margin-bottom: 6px;
-}
-
-.copy-content {
-  display: flex;
-  gap: 10px
-}
-
-.copy-btn {
-  padding: 4px 8px;
-  border: none;
-  color: rgb(255, 235, 216);
-  border-radius: 4px;
-  cursor: pointer;
-}
-.copy-btn:hover {
-  color: rgb(255, 153, 57);
-}
-
-/* Khi hover div, link cũng đổi màu và có underline */
-.copy-btn:hover a {
-  color: rgb(255, 153, 57) !important;
-  text-decoration: underline;
-}
-
-/* Icon sẽ thừa hưởng màu từ div */
-.copy-btn svg {
-  transition: color 0.2s ease;
-  color: inherit;
-}
-.gameplay-header .logo {
-  width: 200px;
-  height: auto;
-}
-
-
-.qr-code {
-  margin-left: auto;
-  height: 60px;
-}
-
-
-.player {
-  display: flex;
-  flex-direction: column;
-  /* ảnh trên, tên dưới */
-  align-items: center;
-  width: 80px;
-  /* fix size để đều */
-}
-
-.player .avatar {
-  width: 65px;
-  height: 65px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.player-name {
-  margin-top: 6px;
-  font-size: 15px;
-  width: 90px;
-  color: rgb(253, 238, 224);
-  -webkit-text-stroke: 1px rgb(253, 238, 224);
-  text-align: center;
-  text-shadow:
-    -2px -2px 0 #000,
-    2px -2px 0 #000,
-    -2px 2px 0 #000,
-    1px 2px 0 #000,
-    0 0 3px #000;
-  white-space: nowrap;
-  /* không xuống dòng */
-  overflow: hidden;
-  /* ẩn phần tràn */
-  text-overflow: ellipsis;
-}
-
-/* Info Box */
-.info-box {
-  flex: 1;
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: row;
-  /* đổi từ column -> row */
-  align-items: center;
-  /* căn giữa theo chiều dọc */
-  gap: 12px;
-  /* khoảng cách giữa ảnh và text */
-}
-
-.quiz-img {
-  width: 120px;
-  /* fix width cho ảnh */
-  height: auto;
-  border-radius: 8px;
-  object-fit: cover;
-}
-
-.quiz-text {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  width: auto;
-  /* căn giữa theo chiều dọc */
-}
-
-.quiz-name {
-  font-size: 16px;
-  font-weight: bold;
-  white-space: nowrap;
-  /* không xuống dòng */
-  overflow: hidden;
-  /* ẩn phần tràn */
-  text-overflow: ellipsis;
-}
-
-.quiz-questions {
-  margin-top: 6px;
-  font-size: 14px;
-  color: #555;
-  white-space: nowrap;
-  /* không xuống dòng */
-  overflow: hidden;
-  /* ẩn phần tràn */
-  text-overflow: ellipsis;
-}
-
-.box-content {
-  background-color: #1f4053;
-  border-bottom-left-radius: 18px;
-  border-bottom-right-radius: 18px;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 20px;
-  justify-content: space-between;
-  /* danh sách ở trên, button ở dưới, khoảng cách tự động */
-}
-
-.box-content p {
-  margin: 20px 0px;
-  font-size: 23px;
-  font-weight: bold;
-  color: rgb(255, 255, 255);
-  -webkit-text-stroke: 1px rgb(255, 255, 255);
-  text-shadow:
-    -2px -2px 0 #000,
-    2px -2px 0 #000,
-    -2px 2px 0 #000,
-    1px 2px 0 #000,
-    0 0 3px #000;
-}
-
-.start-btn-container {
-  display: flex;
-  justify-content: center;
-}
-
-.players-container {
-  display: flex;
-  justify-content: center;
-  /* center container ngang */
-  align-items: center;
-  max-height: 70%;
-  height: 70%;
-}
-
-.players-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
-  width: 90%;
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 10px;
-  border-radius: 12px;
-}
-
-.logo2 {
-  display: none;
 }
 
 @media (max-width: 1560px) {
   body {
     overflow-y: auto;
   }
-  
+
 }
 
 /* Responsive Mobile */
@@ -310,6 +77,7 @@ body {
   .header .logo {
     display: none;
   }
+
   .zoom-btn {
     display: none;
   }

@@ -9,6 +9,8 @@ import { styled } from "@mui/material/styles";
 import Button from "@mui/material/Button";
 import RoomCreate from "../roomCreate/RoomCreate";
 import QuizItemGameplay from "../../component/quizItemGamePlay/QuizItemGameplay";
+import LeaderBoardGamePlay from "../../component/leaderBoardGamePlay/LeaderBoardGamePlay";
+
 
 const CustomerLink = styled(Link)(({ theme }) => ({
     color: "rgb(255, 235, 216)",
@@ -53,18 +55,46 @@ export default function Gameplay() {
         { id: 28, name: "Vi Quoc Zit", avatar: "https://i.pravatar.cc/50?img=28" },
         { id: 29, name: "Dep Trai 102", avatar: "https://i.pravatar.cc/50?img=29" },
         { id: 30, name: "Quoc Viet Vi 2", avatar: "https://i.pravatar.cc/50?img=30" },
-    ]);
 
-    const [copied, setCopied] = useState(false);
-    const copyRoomCode = () => {
-        navigator.clipboard.writeText(roomCode);
-        setCopied(true);
+
+    ]);
+    const questions = [
+        {
+            question: "What is the capital of France?",
+            answers: ["Paris", "London", "Berlin", "Madrid"],
+            correctIndex: 0,
+            image: `${import.meta.env.BASE_URL}image/quiz1.png`,
+        },
+        {
+            question: "Which planet is known as the Red Planet?",
+            answers: ["Earth", "Mars", "Venus", "Jupiter"],
+            correctIndex: 1,
+            image: `${import.meta.env.BASE_URL}image/quiz2.png`,
+        },
+        {
+            question: "Who painted the Mona Lisa?",
+            answers: ["Da Vinci", "Picasso", "Van Gogh", "Michelangelo"],
+            correctIndex: 0,
+            image: `${import.meta.env.BASE_URL}image/quiz3.png`,
+        },
+    ];
+    const [gameStarted, setGameStarted] = useState(false); // mới
+
+    // Hàm truyền xuống RoomCreate
+    const handleStartGame = () => {
+        setGameStarted(true);
     };
-    
     const [screenWidth, setScreenWidth] = useState(window.innerWidth);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
-    const [startGame, setStartGame] = useState(false); // <-- state để bật Quiz
+    // Lưu state quiz
+    const [currentQuizIndex, setCurrentQuizIndex] = useState(
+        parseInt(localStorage.getItem("currentQuizIndex")) || 0
+    );
+    const [selectedAnswers, setSelectedAnswers] = useState(
+        JSON.parse(localStorage.getItem("selectedAnswers")) || {}
+    );
+    const [showLeaderboard, setShowLeaderboard] = useState(false);
 
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
@@ -86,6 +116,36 @@ export default function Gameplay() {
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
+    // Khi quiz thay đổi, lưu localStorage
+    useEffect(() => {
+        localStorage.setItem("currentQuizIndex", currentQuizIndex);
+        localStorage.setItem("selectedAnswers", JSON.stringify(selectedAnswers));
+    }, [currentQuizIndex, selectedAnswers]);
+
+    const handleAnswer = (playerId, answerIdx) => {
+        setSelectedAnswers((prev) => ({
+            ...prev,
+            [currentQuizIndex]: { ...prev[currentQuizIndex], [playerId]: answerIdx },
+        }));
+
+        // giả lập allAnswered sau 3s
+        setTimeout(() => {
+            const allAnswered = true;
+            if (allAnswered) {
+                setShowLeaderboard(true);
+                setTimeout(() => {
+                    setShowLeaderboard(false);
+                    if (currentQuizIndex + 1 < questions.length) {
+                        setCurrentQuizIndex(currentQuizIndex + 1);
+                    } else {
+                        // quiz cuối cùng xong
+                        console.log("All quizzes done!");
+                    }
+                }, 3000); // hiển thị leaderboard 3s
+            }
+        }, 3000);
+    };
+
     return (
         <div className="gameplay">
             {/* HEADER */}
@@ -101,21 +161,37 @@ export default function Gameplay() {
                     <button onClick={toggleFullscreen} className="zoom-btn">
                         {isFullscreen ? <ZoomInMapIcon /> : <ZoomOutMapIcon />}
                     </button>
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => {
+                            localStorage.clear(); // hoặc localStorage.removeItem("quizState")
+                            window.location.reload(); // reload để reset lại state
+                        }}
+                    >
+                        Clear Storage
+                    </Button>
                 </div>
             </header>
 
-            {/* Nội dung chính */}
-            {!startGame ? (
+            {!gameStarted ? (
                 <RoomCreate
                     roomCode={roomCode}
                     players={players}
-                    onStart={() => setStartGame(true)} // <-- truyền function bật Quiz
+                    onStart={handleStartGame} // truyền hàm start
+                />
+            ) : !showLeaderboard ? (
+                <QuizItemGameplay
+                    key={currentQuizIndex}
+                    question={questions[currentQuizIndex].question}
+                    answers={questions[currentQuizIndex].answers}
+                    image={questions[currentQuizIndex].image}
+                    correctIndex={questions[currentQuizIndex].correctIndex}
+                    selectedAnswer={selectedAnswers[currentQuizIndex]?.[1] ?? null}
+                    onSelectAnswer={(idx) => handleAnswer(1, idx)}
                 />
             ) : (
-                <QuizItemGameplay
-                    question="What is the capital of France?"
-                    answers={["Paris", "London", "Berlin", "Madrid"]}
-                />
+                <LeaderBoardGamePlay />
             )}
         </div>
     );
