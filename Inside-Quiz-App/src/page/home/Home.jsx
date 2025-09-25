@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import "./Home.css";
 import Button from "@mui/material/Button";
 import HomeContent from "../homeContent/HomeContent";
+import QuizGame from "../../components/QuizGame/QuizGame";
 
 function Home() {
   const BASE_URL = import.meta.env.BASE_URL; // BASE_URL để deploy GitHub Pages
   const [pin, setPin] = useState("");
+  const [showQuizGame, setShowQuizGame] = useState(false);
 
   // input pin
   const handlePinChange = (e) => {
@@ -16,6 +18,14 @@ function Home() {
       value = value.substring(0, 3) + " " + value.substring(3);
     }
     setPin(value);
+  };
+
+  const handleJoinGame = () => {
+    if (pin.replace(/\s/g, "").length === 6) {
+      setShowQuizGame(true);
+    } else {
+      alert("Vui lòng nhập đúng mã PIN 6 chữ số");
+    }
   };
 
   const categories = [
@@ -29,6 +39,10 @@ function Home() {
   ];
 
   const [activeIndex, setActiveIndex] = useState(0);
+
+  if (showQuizGame) {
+    return <QuizGame initialRoomId={pin.replace(/\s/g, "")} />;
+  }
 
   return (
     <div className="home">
@@ -49,7 +63,21 @@ function Home() {
               className="join-input"
               value={pin}
               onChange={handlePinChange}
+              onKeyPress={(e) => e.key === "Enter" && handleJoinGame()}
             />
+            <Button
+              variant="contained"
+              onClick={handleJoinGame}
+              sx={{
+                ml: 1,
+                borderRadius: "15px",
+                backgroundColor: "#91d9bf",
+                color: "black",
+                "&:hover": { backgroundColor: "#81c8af" },
+              }}
+            >
+              Join
+            </Button>
           </div>
 
           {/* Right side: search + login */}
@@ -106,7 +134,21 @@ function Home() {
             className="join-input"
             value={pin}
             onChange={handlePinChange}
+            onKeyPress={(e) => e.key === "Enter" && handleJoinGame()}
           />
+          <Button
+            variant="contained"
+            onClick={handleJoinGame}
+            sx={{
+              ml: 1,
+              borderRadius: "15px",
+              backgroundColor: "#91d9bf",
+              color: "black",
+              "&:hover": { backgroundColor: "#81c8af" },
+            }}
+          >
+            Join
+          </Button>
         </div>
       </div>
 
