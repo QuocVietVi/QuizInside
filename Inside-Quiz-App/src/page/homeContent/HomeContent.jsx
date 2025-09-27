@@ -167,12 +167,12 @@ export default function HomeContent() {
             </div>
 
             <div>
-                <HomeContentItem quizList={quizzes} title="Popular quizzes" />
-                <HomeContentItem quizList={quizzes2} title="Animals" />
-                <HomeContentItem quizList={quizzes3} title="Random selection" />
-                <HomeContentItem quizList={quizzes3} title="Random selection" />
-                <HomeContentItem quizList={quizzes3} title="Random selection" />
-                <HomeContentItem quizList={quizzes3} title="Random selection" />
+                <HomeContentItem quizList={quizzes} title="Công nghệ" />
+                <HomeContentItem quizList={quizzes2} title="Phim ảnh" />
+                <HomeContentItem quizList={quizzes3} title="Thể thao" />
+                <HomeContentItem quizList={quizzes3} title="Lịch sử Việt Nam" />
+                <HomeContentItem quizList={quizzes3} title="Âm nhạc" />
+                <HomeContentItem quizList={quizzes3} title="Động vật" />
             </div>
         </div>
     );

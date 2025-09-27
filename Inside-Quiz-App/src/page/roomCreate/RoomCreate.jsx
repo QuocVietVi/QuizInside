@@ -68,7 +68,7 @@ export default function RoomCreate({ roomCode, players, onStart }) {
                             {players.map(player => (
                                 <div key={player.id} className="player">
                                     <img src={player.avatar} alt={player.name} className="avatar" />
-                                    <span className="player-name">{player.name}</span>
+                                    <span className="player-name">{player.nickname}</span>
                                 </div>
                             ))}
                         </div>

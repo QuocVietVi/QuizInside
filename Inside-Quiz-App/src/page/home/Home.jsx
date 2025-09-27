@@ -2,12 +2,13 @@ import React, { useState } from "react";
 import "./Home.css";
 import Button from "@mui/material/Button";
 import HomeContent from "../homeContent/HomeContent";
+import { joinRoom } from "../../services/gameService"; // import service
 
 function Home() {
-  const BASE_URL = import.meta.env.BASE_URL; // BASE_URL để deploy GitHub Pages
+  const BASE_URL = import.meta.env.BASE_URL; 
   const [pin, setPin] = useState("");
+  const token = "demo-token-123"; // token mặc định
 
-  // input pin
   const handlePinChange = (e) => {
     let value = e.target.value;
     value = value.replace(/\D/g, "");
@@ -16,6 +17,19 @@ function Home() {
       value = value.substring(0, 3) + " " + value.substring(3);
     }
     setPin(value);
+  };
+
+  const handleJoinGame = async () => {
+    try {
+      const roomID = pin.replace(" ", ""); // bỏ khoảng trắng
+      const res = await joinRoom(roomID, token, (msg) => {
+        console.log("WebSocket message:", msg);
+      });
+      console.log("Joined room:", res);
+      alert(`Bạn đã join vào phòng ${res.room_id}`);
+    } catch (err) {
+      alert("Lỗi join room: " + err.message);
+    }
   };
 
   const categories = [
@@ -35,7 +49,6 @@ function Home() {
       <div className="navbar-container">
         {/* Navbar chính */}
         <div className="navbar">
-          {/* Logo */}
           <div className="navbar-logo">
             <img src={`${BASE_URL}logo/logo.png`} alt="Logo" />
           </div>
@@ -50,9 +63,23 @@ function Home() {
               value={pin}
               onChange={handlePinChange}
             />
+            <Button
+              variant="contained"
+              onClick={handleJoinGame}
+              sx={{
+                ml: 1,
+                borderRadius: "20px",
+                fontWeight: 600,
+                backgroundColor: "#91d9bf",
+                color: "black",
+                "&:hover": { backgroundColor: "#81c8af" },
+              }}
+            >
+              Join
+            </Button>
           </div>
 
-          {/* Right side: search + login */}
+          {/* Right side */}
           <div className="navbar-right">
             <div className="navbar-search">
               <img src={`${BASE_URL}image/searchIcon.png`} alt="Search" />
@@ -68,15 +95,7 @@ function Home() {
                 textTransform: "none",
                 color: "black",
                 backgroundColor: "#91d9bf",
-                "&:hover": {
-                  backgroundColor: "#81c8af",
-                },
-                "&.Mui-focusVisible": {
-                  outline: "none",
-                },
-                "&:focus": {
-                  outline: "none",
-                },
+                "&:hover": { backgroundColor: "#81c8af" },
               }}
             >
               Sign in
@@ -107,6 +126,20 @@ function Home() {
             value={pin}
             onChange={handlePinChange}
           />
+          <Button
+            variant="contained"
+            onClick={handleJoinGame}
+            sx={{
+              mt: 1,
+              borderRadius: "20px",
+              fontWeight: 600,
+              backgroundColor: "#91d9bf",
+              color: "black",
+              "&:hover": { backgroundColor: "#81c8af" },
+            }}
+          >
+            Join
+          </Button>
         </div>
       </div>
 

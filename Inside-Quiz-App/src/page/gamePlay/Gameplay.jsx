@@ -1,198 +1,157 @@
+// Gameplay.jsx
 import { useState, useEffect } from "react";
 import "./Gameplay.css";
-import Link from '@mui/material/Link';
-import LinkIcon from "@mui/icons-material/Link";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ZoomOutMapIcon from '@mui/icons-material/ZoomOutMap';
 import ZoomInMapIcon from '@mui/icons-material/ZoomInMap';
-import { styled } from "@mui/material/styles";
 import Button from "@mui/material/Button";
 import RoomCreate from "../roomCreate/RoomCreate";
 import QuizItemGameplay from "../../component/quizItemGamePlay/QuizItemGameplay";
 import LeaderBoardGamePlay from "../../component/leaderBoardGamePlay/LeaderBoardGamePlay";
+import {
+  createRoom,
+  startGame,
+  connectToRoom,
+  sendAnswer,
+} from "../../services/gameService";
 
+export default function Gameplay({ token = "aaa", category = "Công nghệ" }) {
+  const [roomID, setRoomID] = useState(null);
+  const [players, setPlayers] = useState([]);
+  const [screen, setScreen] = useState("room"); // room | quiz | leaderboard
+  const [question, setQuestion] = useState(null);
+  const [leaderboard, setLeaderboard] = useState([]);
 
-const CustomerLink = styled(Link)(({ theme }) => ({
-    color: "rgb(255, 235, 216)",
-    '&:hover': {
-        color: "rgb(255, 153, 57)",
-    },
-}));
-export default function Gameplay() {
-    const [roomCode] = useState("123 456");
-    const [players] = useState([
-        { id: 1, name: "Quoc Viet Vi", avatar: "https://i.pravatar.cc/50?img=1" },
-        { id: 2, name: "Viet dep zai", avatar: "https://i.pravatar.cc/50?img=2" },
-        { id: 3, name: "Viet Vi", avatar: "https://i.pravatar.cc/50?img=3" },
-        { id: 4, name: "Quoc Viet Vi 2", avatar: "https://i.pravatar.cc/50?img=4" },
-        { id: 5, name: "Vi Quoc Zit", avatar: "https://i.pravatar.cc/50?img=5" },
-        { id: 6, name: "Dep Trai 102", avatar: "https://i.pravatar.cc/50?img=6" },
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-        { id: 7, name: "Quoc Viet Vi", avatar: "https://i.pravatar.cc/50?img=7" },
-        { id: 8, name: "Viet dep zai", avatar: "https://i.pravatar.cc/50?img=8" },
-        { id: 9, name: "Viet Vi", avatar: "https://i.pravatar.cc/50?img=9" },
-        { id: 10, name: "Vi Quoc Zit", avatar: "https://i.pravatar.cc/50?img=10" },
-        { id: 11, name: "Dep Trai 102", avatar: "https://i.pravatar.cc/50?img=11" },
-        { id: 12, name: "Quoc Viet Vi 2", avatar: "https://i.pravatar.cc/50?img=12" },
+  // --- WebSocket callback
+  const handleMessage = (msg) => {
+    switch (msg.type) {
+      case "update_players":
+        setPlayers(
+          msg.payload.players.map((p, i) => ({
+            ...p,
+            avatar: `https://i.pravatar.cc/50?img=${i + 1}`,
+          }))
+        );
+        break;
 
-        { id: 13, name: "Viet dep zai", avatar: "https://i.pravatar.cc/50?img=13" },
-        { id: 14, name: "Viet Vi", avatar: "https://i.pravatar.cc/50?img=14" },
-        { id: 15, name: "Quoc Viet Vi", avatar: "https://i.pravatar.cc/50?img=15" },
-        { id: 16, name: "Vi Quoc Zit", avatar: "https://i.pravatar.cc/50?img=16" },
-        { id: 17, name: "Dep Trai 102", avatar: "https://i.pravatar.cc/50?img=17" },
-        { id: 18, name: "Quoc Viet Vi 2", avatar: "https://i.pravatar.cc/50?img=18" },
+      case "question":
+        setQuestion(msg.payload.question);
+        setScreen("quiz");
+        break;
 
-        { id: 19, name: "Viet dep zai", avatar: "https://i.pravatar.cc/50?img=19" },
-        { id: 20, name: "Viet Vi", avatar: "https://i.pravatar.cc/50?img=20" },
-        { id: 21, name: "Quoc Viet Vi", avatar: "https://i.pravatar.cc/50?img=21" },
-        { id: 22, name: "Vi Quoc Zit", avatar: "https://i.pravatar.cc/50?img=22" },
-        { id: 23, name: "Dep Trai 102", avatar: "https://i.pravatar.cc/50?img=23" },
-        { id: 24, name: "Quoc Viet Vi 2", avatar: "https://i.pravatar.cc/50?img=24" },
+      case "results":
+      case "game_over":
+        setLeaderboard(calculateScores(msg.payload.leaderboard));
+        setScreen("leaderboard");
+        break;
 
-        { id: 25, name: "Viet dep zai", avatar: "https://i.pravatar.cc/50?img=25" },
-        { id: 26, name: "Viet Vi", avatar: "https://i.pravatar.cc/50?img=26" },
-        { id: 27, name: "Quoc Viet Vi", avatar: "https://i.pravatar.cc/50?img=27" },
-        { id: 28, name: "Vi Quoc Zit", avatar: "https://i.pravatar.cc/50?img=28" },
-        { id: 29, name: "Dep Trai 102", avatar: "https://i.pravatar.cc/50?img=29" },
-        { id: 30, name: "Quoc Viet Vi 2", avatar: "https://i.pravatar.cc/50?img=30" },
+      default:
+        console.log("Tin nhắn không xác định:", msg);
+    }
+  };
 
+  // --- Tạo room khi Gameplay mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await createRoom(token, category, handleMessage);
+        setRoomID(res.room_id);
+      } catch (err) {
+        console.error("Không tạo được phòng:", err);
+      }
+    })();
+  }, [category]);
 
-    ]);
-    const questions = [
-        {
-            question: "What is the capital of France?",
-            answers: ["Paris", "London", "Berlin", "Madrid"],
-            correctIndex: 0,
-            image: `${import.meta.env.BASE_URL}image/quiz1.png`,
-        },
-        {
-            question: "Which planet is known as the Red Planet?",
-            answers: ["Earth", "Mars", "Venus", "Jupiter"],
-            correctIndex: 1,
-            image: `${import.meta.env.BASE_URL}image/quiz2.png`,
-        },
-        {
-            question: "Who painted the Mona Lisa?",
-            answers: ["Da Vinci", "Picasso", "Van Gogh", "Michelangelo"],
-            correctIndex: 0,
-            image: `${import.meta.env.BASE_URL}image/quiz3.png`,
-        },
-    ];
-    const [gameStarted, setGameStarted] = useState(false); // mới
+  // --- Fullscreen
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else if (document.exitFullscreen) document.exitFullscreen();
+  };
 
-    // Hàm truyền xuống RoomCreate
-    const handleStartGame = () => {
-        setGameStarted(true);
-    };
-    const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-    const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    const handleChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handleChange);
+    return () => document.removeEventListener("fullscreenchange", handleChange);
+  }, []);
 
-    // Lưu state quiz
-    const [currentQuizIndex, setCurrentQuizIndex] = useState(
-        parseInt(localStorage.getItem("currentQuizIndex")) || 0
-    );
-    const [selectedAnswers, setSelectedAnswers] = useState(
-        JSON.parse(localStorage.getItem("selectedAnswers")) || {}
-    );
-    const [showLeaderboard, setShowLeaderboard] = useState(false);
+  useEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-    const toggleFullscreen = () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
-        } else {
-            if (document.exitFullscreen) document.exitFullscreen();
-        }
-    };
+  const handleStartGame = async () => {
+    if (!roomID) return;
+    try {
+      await startGame(roomID, token);
+    } catch (err) {
+      console.error("Không thể start game:", err);
+    }
+  };
 
-    useEffect(() => {
-        const handleChange = () => setIsFullscreen(!!document.fullscreenElement);
-        document.addEventListener("fullscreenchange", handleChange);
-        return () => document.removeEventListener("fullscreenchange", handleChange);
-    }, []);
+  const handleAnswer = (answer, timeLeft) => {
+    const score = calculateScore(timeLeft);
+    sendAnswer({ ...answer, score });
+  };
 
-    useEffect(() => {
-        const handleResize = () => setScreenWidth(window.innerWidth);
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
-
-    // Khi quiz thay đổi, lưu localStorage
-    useEffect(() => {
-        localStorage.setItem("currentQuizIndex", currentQuizIndex);
-        localStorage.setItem("selectedAnswers", JSON.stringify(selectedAnswers));
-    }, [currentQuizIndex, selectedAnswers]);
-
-    const handleAnswer = (playerId, answerIdx) => {
-        setSelectedAnswers((prev) => ({
-            ...prev,
-            [currentQuizIndex]: { ...prev[currentQuizIndex], [playerId]: answerIdx },
-        }));
-
-        // giả lập allAnswered sau 3s
-        setTimeout(() => {
-            const allAnswered = true;
-            if (allAnswered) {
-                setShowLeaderboard(true);
-                setTimeout(() => {
-                    setShowLeaderboard(false);
-                    if (currentQuizIndex + 1 < questions.length) {
-                        setCurrentQuizIndex(currentQuizIndex + 1);
-                    } else {
-                        // quiz cuối cùng xong
-                        console.log("All quizzes done!");
-                    }
-                }, 3000); // hiển thị leaderboard 3s
-            }
-        }, 3000);
-    };
-
-    return (
-        <div className="gameplay">
-            {/* HEADER */}
-            <header className="header">
-                <div className="header-left">
-                    <img src={`${import.meta.env.BASE_URL}logo/logo.png`} alt="Logo" className="logo" />
-                    <span className="room-code">PIN: {roomCode}</span>
-                    <img className="userIcon" src={`${import.meta.env.BASE_URL}icon/userIcon.png`} alt="" />
-                    <span className="player-count">{players.length}</span>
-                </div>
-
-                <div className="header-right">
-                    <button onClick={toggleFullscreen} className="zoom-btn">
-                        {isFullscreen ? <ZoomInMapIcon /> : <ZoomOutMapIcon />}
-                    </button>
-                    <Button
-                        variant="contained"
-                        color="error"
-                        onClick={() => {
-                            localStorage.clear(); // hoặc localStorage.removeItem("quizState")
-                            window.location.reload(); // reload để reset lại state
-                        }}
-                    >
-                        Clear Storage
-                    </Button>
-                </div>
-            </header>
-
-            {!gameStarted ? (
-                <RoomCreate
-                    roomCode={roomCode}
-                    players={players}
-                    onStart={handleStartGame} // truyền hàm start
-                />
-            ) : !showLeaderboard ? (
-                <QuizItemGameplay
-                    key={currentQuizIndex}
-                    question={questions[currentQuizIndex].question}
-                    answers={questions[currentQuizIndex].answers}
-                    image={questions[currentQuizIndex].image}
-                    correctIndex={questions[currentQuizIndex].correctIndex}
-                    selectedAnswer={selectedAnswers[currentQuizIndex]?.[1] ?? null}
-                    onSelectAnswer={(idx) => handleAnswer(1, idx)}
-                />
-            ) : (
-                <LeaderBoardGamePlay />
-            )}
+  return (
+    <div className="gameplay">
+      {/* === HEADER GIỮ NGUYÊN === */}
+      <header className="header">
+        <div className="header-left">
+          <img src={`${import.meta.env.BASE_URL}logo/logo.png`} alt="Logo" className="logo" />
+          <span className="room-code">PIN: {roomID || "..."}</span>
+          <img className="userIcon" src={`${import.meta.env.BASE_URL}icon/userIcon.png`} alt="" />
+          <span className="player-count">{players.length}</span>
         </div>
-    );
+
+        <div className="header-right">
+          <button onClick={toggleFullscreen} className="zoom-btn">
+            {isFullscreen ? <ZoomInMapIcon /> : <ZoomOutMapIcon />}
+          </button>
+          {/* <Button
+            variant="contained"
+            color="error"
+            onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}
+          >
+            Clear Storage
+          </Button> */}
+          <span>{category}</span>
+
+        </div>
+      </header>
+
+      {/* === BODY GAME === */}
+      {screen === "room" && (
+        <RoomCreate roomID={roomID} players={players} onStart={handleStartGame} />
+      )}
+      {screen === "quiz" && question && (
+        <QuizItemGameplay
+          question={question.text}
+          answers={question.options}
+          image={question.image}
+          correctIndex={question.correct_id}
+          onSelectAnswer={handleAnswer}
+        />
+      )}
+      {screen === "leaderboard" && <LeaderBoardGamePlay leaderboard={leaderboard} />}
+    </div>
+  );
+}
+
+// --- tính điểm dựa trên thời gian
+function calculateScore(timeLeft) {
+  const base = 1000;
+  const multiplier = 50;
+  return base + timeLeft * multiplier;
+}
+
+// --- sắp xếp leaderboard
+function calculateScores(players) {
+  return [...players].sort((a, b) => b.score - a.score);
 }
