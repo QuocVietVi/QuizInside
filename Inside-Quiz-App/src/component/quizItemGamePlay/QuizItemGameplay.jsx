@@ -22,14 +22,14 @@ export default function QuizItemGameplay({
 
     const timersRef = useRef([]);
     const progressIntervalRef = useRef(null);
-
+    const hasAnsweredRef = useRef(false);
     useEffect(() => {
         setDisplayedText("");
         setVisibleCount(0);
         setShowProgress(false);
         setProgress(100);
         setScore(1000);
-        setCanClick(selectedAnswer === null);
+        setCanClick(false);
         setActiveIndex(selectedAnswer ?? -1);
         setDisabledAll(selectedAnswer !== null);
 
@@ -40,33 +40,32 @@ export default function QuizItemGameplay({
             progressIntervalRef.current = null;
         }
 
-        let i = -1;
-        const typingInterval = setInterval(() => {
-            if (i < question.length) {
+        // Sử dụng setTimeout cho từng chữ
+        for (let i = 0; i < question.length; i++) {
+            const t = setTimeout(() => {
                 setDisplayedText((prev) => prev + question.charAt(i));
-                i++;
-            } else {
-                clearInterval(typingInterval);
+            }, i * 50);
+            timersRef.current.push(t);
+        }
 
-                const perBtnDelay = 250;
-                for (let k = 0; k < answers.length; k++) {
-                    const t = setTimeout(() => {
-                        setVisibleCount((prev) => Math.max(prev, k + 1));
-                    }, (k + 1) * perBtnDelay);
-                    timersRef.current.push(t);
-                }
+        // Sau khi chữ cuối cùng hiện ra, bắt đầu hiển thị button
+        const buttonsDelay = question.length * 50;
+        for (let k = 0; k < answers.length; k++) {
+            const t = setTimeout(() => {
+                setVisibleCount((prev) => Math.max(prev, k + 1));
+            }, buttonsDelay + (k + 1) * 250);
+            timersRef.current.push(t);
+        }
 
-                const afterButtons = answers.length * perBtnDelay + 1000;
-                const t2 = setTimeout(() => {
-                    setShowProgress(true);
-                    if (selectedAnswer === null) setCanClick(true);
-                }, afterButtons);
-                timersRef.current.push(t2);
-            }
-        }, 50);
+        // Hiển thị progress sau cùng
+        const progressDelay = buttonsDelay + answers.length * 250 + 1000;
+        const t2 = setTimeout(() => {
+            setShowProgress(true);
+            setCanClick(true);
+        }, progressDelay);
+        timersRef.current.push(t2);
 
         return () => {
-            clearInterval(typingInterval);
             timersRef.current.forEach((t) => clearTimeout(t));
             timersRef.current = [];
             if (progressIntervalRef.current) {
@@ -76,10 +75,13 @@ export default function QuizItemGameplay({
         };
     }, [question, answers.length]);
 
+
     useEffect(() => {
         if (!showProgress) return;
 
         const startDelay = setTimeout(() => {
+            if (hasAnsweredRef.current) return; // nếu đã chọn thì không start progress
+
             const duration = 10000;
             const steps = 100;
             let current = 0;
@@ -96,6 +98,7 @@ export default function QuizItemGameplay({
         }, 500);
 
         timersRef.current.push(startDelay);
+
         return () => {
             clearTimeout(startDelay);
             if (progressIntervalRef.current) {
@@ -105,8 +108,10 @@ export default function QuizItemGameplay({
         };
     }, [showProgress]);
 
+
     const handleSelect = (idx) => {
         if (!canClick || disabledAll) return;
+        hasAnsweredRef.current = true; // đánh dấu đã chọn
         setActiveIndex(idx);
         setDisabledAll(true);
         setCanClick(false);

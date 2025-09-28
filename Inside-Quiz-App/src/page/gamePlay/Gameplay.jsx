@@ -23,7 +23,7 @@ export default function Gameplay({ token = "aaa", category = "Công nghệ" }) {
 
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [isFullscreen, setIsFullscreen] = useState(false);
-
+  const [correctId, setCorrectId] = useState(null);
   // --- WebSocket callback
   const handleMessage = (msg) => {
     switch (msg.type) {
@@ -42,10 +42,21 @@ export default function Gameplay({ token = "aaa", category = "Công nghệ" }) {
         break;
 
       case "results":
+        setLeaderboard(calculateScores(msg.payload.leaderboard));
+        setCorrectId(msg.payload.correct_id); // lưu lại correct_id
+        // sau 3 giây mới sang leaderboard
+        setTimeout(() => {
+          setScreen("leaderboard");
+          setCorrectId(null); // reset để lần sau không dính
+        }, 3000);
+        break;
+
       case "game_over":
         setLeaderboard(calculateScores(msg.payload.leaderboard));
+        setCorrectId(msg.payload.correct_id);
         setScreen("leaderboard");
         break;
+
 
       default:
         console.log("Tin nhắn không xác định:", msg);
@@ -91,9 +102,8 @@ export default function Gameplay({ token = "aaa", category = "Công nghệ" }) {
     }
   };
 
-  const handleAnswer = (answer, timeLeft) => {
-    const score = calculateScore(timeLeft);
-    sendAnswer({ ...answer, score });
+  const handleAnswer = (answerId) => {
+    sendAnswer({ answer_id: answerId });
   };
 
   return (
@@ -135,7 +145,7 @@ export default function Gameplay({ token = "aaa", category = "Công nghệ" }) {
           question={question.text}
           answers={question.options}
           image={question.image}
-          correctIndex={question.correct_id}
+          correctIndex={correctId}
           onSelectAnswer={handleAnswer}
         />
       )}
