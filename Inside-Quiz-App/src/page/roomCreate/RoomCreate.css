@@ -23,7 +23,7 @@
   border-radius: 18px;
   border-bottom-right-radius: 0px;
   border-bottom-left-radius: 0px;
-  background: #1a3849;
+  background: #17303f;
   max-height: 150px;
 }
 
@@ -67,6 +67,7 @@
   border-radius: 4px;
   cursor: pointer;
 }
+
 .copy-btn:hover {
   color: rgb(255, 153, 57);
 }
@@ -82,6 +83,7 @@
   transition: color 0.2s ease;
   color: inherit;
 }
+
 .gameplay-header .logo {
   width: 200px;
   height: auto;
@@ -110,6 +112,14 @@
   object-fit: cover;
 }
 
+.player .avatarFrame {
+  width: 79px;
+  height: 79px;
+  position: absolute;
+  object-fit: cover;
+  padding-bottom: 10px;
+}
+
 .player-name {
   margin-top: 6px;
   font-size: 15px;
@@ -130,10 +140,21 @@
   text-overflow: ellipsis;
 }
 
+.frame-text {
+  margin-top: 53px;
+  font-size: 11px;
+  width: 120px;
+  color: rgb(177, 85, 0);
+  -webkit-text-stroke: 1px rgb(177, 85, 0);
+  text-align: center;
+  font-weight: bold;
+
+  position: absolute;
+}
+
 /* Info Box */
 .info-box {
   flex: 1;
-  background: #ffffff;
   border-radius: 8px;
   padding: 12px;
   display: flex;
@@ -158,11 +179,20 @@
   flex-direction: column;
   justify-content: center;
   width: auto;
+  color: rgb(253, 238, 224);
+  -webkit-text-stroke: 1px rgb(253, 238, 224);
+  text-align: center;
+  text-shadow:
+    -2px -2px 0 #000,
+    2px -2px 0 #000,
+    -2px 2px 0 #000,
+    1px 2px 0 #000,
+    0 0 3px #000;
   /* căn giữa theo chiều dọc */
 }
 
 .quiz-name {
-  font-size: 16px;
+  font-size: 23px;
   font-weight: bold;
   white-space: nowrap;
   /* không xuống dòng */
@@ -237,6 +267,7 @@
 .logo2 {
   display: none;
 }
+
 @media (max-width: 1560px) {
   body {
     overflow-y: auto;
@@ -250,7 +281,7 @@
     border-radius: 18px;
     border-bottom-right-radius: 0px;
     border-bottom-left-radius: 0px;
-    background: #1a3849;
+    background: #17303f;
     max-height: 150px;
   }
 
@@ -345,7 +376,6 @@
   /* Info Box */
   .info-box {
     flex: 1;
-    background: #ffffff;
     border-radius: 8px;
     padding: 12px;
     display: flex;
@@ -370,11 +400,20 @@
     flex-direction: column;
     justify-content: center;
     width: auto;
+    color: rgb(253, 238, 224);
+    -webkit-text-stroke: 1px rgb(253, 238, 224);
+    text-align: center;
+    text-shadow:
+      -2px -2px 0 #000,
+      2px -2px 0 #000,
+      -2px 2px 0 #000,
+      1px 2px 0 #000,
+      0 0 3px #000;
     /* căn giữa theo chiều dọc */
   }
 
   .quiz-name {
-    font-size: 16px;
+    font-size: 23px;
     font-weight: bold;
     white-space: nowrap;
     /* không xuống dòng */
@@ -449,6 +488,7 @@
     padding: 10px;
     gap: 10px;
   }
+
   .gameplay-box {
     flex: none;
   }
@@ -458,6 +498,7 @@
     width: 100%;
     flex-direction: row;
     gap: 8px;
+    justify-content: center;
   }
 
   .quiz-img {
@@ -519,6 +560,14 @@
     height: 50px;
   }
 
+  .player .avatarFrame {
+    width: 62px;
+    height: 65px;
+    position: absolute;
+    object-fit: cover;
+    padding-bottom: 10px;
+  }
+
   .player-name {
     font-size: 12px;
     width: 60px;
@@ -530,5 +579,21 @@
 
   .box-content {
     padding: 10px;
+  }
+
+  .quiz-questions {
+    display: none;
+  }
+
+  .frame-text {
+    margin-top: 41px;
+    font-size: 11px;
+    width: 120px;
+    color: rgb(177, 85, 0);
+    -webkit-text-stroke: 1px rgb(177, 85, 0);
+    text-align: center;
+    font-weight: bold;
+
+    position: absolute;
   }
 }

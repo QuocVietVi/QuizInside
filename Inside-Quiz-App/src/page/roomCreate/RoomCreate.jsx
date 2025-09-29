@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./RoomCreate.css";
 import Link from '@mui/material/Link';
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -14,14 +14,38 @@ const CustomerLink = styled(Link)(({ theme }) => ({
     },
 }));
 
-export default function RoomCreate({ roomCode, players, onStart }) {
+export default function RoomCreate({ 
+    roomCode, 
+    players, 
+    onStart, 
+    category = "Công nghệ", 
+    isHost = true, 
+    currentUserId = null 
+}) {
     const [copied, setCopied] = useState(false);
+    const [dots, setDots] = useState("");
+
+    // Animation cho loading dots
+    useEffect(() => {
+        if (!isHost) {
+            const interval = setInterval(() => {
+                setDots(prev => {
+                    if (prev === "...") return "";
+                    return prev + ".";
+                });
+            }, 500);
+            return () => clearInterval(interval);
+        }
+    }, [isHost]);
 
     const copyRoomCode = () => {
         navigator.clipboard.writeText(roomCode);
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
     };
+
+    // Tìm host (player đầu tiên trong danh sách thường là host)
+    const hostPlayer = players[0];
 
     return (
         <div className="main-content">
@@ -52,10 +76,11 @@ export default function RoomCreate({ roomCode, players, onStart }) {
 
                     <div className="header-right">
                         <div className="info-box">
-                            <img src={`${import.meta.env.BASE_URL}image/quiz1.png`} alt="Quiz" className="quiz-img" />
                             <div className="quiz-text">
-                                <h2 className="quiz-name">Lịch sử Meo Meo</h2>
-                                <p className="quiz-questions">Số lượng câu hỏi: 20</p>
+                                <div className="category-container">
+                                    <h2 className="quiz-name">{category}</h2>
+                                </div>
+                                <p className="quiz-questions">Số lượng câu hỏi: 10</p>
                             </div>
                         </div>
                     </div>
@@ -65,12 +90,35 @@ export default function RoomCreate({ roomCode, players, onStart }) {
                     <p>{players.length} trên 100 người:</p>
                     <div className="players-container">
                         <div className="players-list">
-                            {players.map(player => (
-                                <div key={player.id} className="player">
-                                    <img src={player.avatar} alt={player.name} className="avatar" />
-                                    <span className="player-name">{player.nickname}</span>
-                                </div>
-                            ))}
+                            {players.map((player, index) => {
+                                const isCurrentUser = currentUserId && player.id === currentUserId;
+                                const isHostPlayer = index === 0; // Giả sử player đầu tiên là host
+                                
+                                return (
+                                    <div key={player.id} className="player">
+                                        {/* Hiển thị frame dựa trên role */}
+                                        {(isHostPlayer || isCurrentUser) ? (
+                                            <>
+                                                <img 
+                                                    src={`${import.meta.env.BASE_URL}image/avaFrameText.png`} 
+                                                    className="avatarFrame" 
+                                                />
+                                                <span className="frame-text">
+                                                    {isHostPlayer ? "HOST" : "ME"}
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <img 
+                                                src={`${import.meta.env.BASE_URL}image/avaFrame.png`} 
+                                                className="avatarFrame" 
+                                            />
+                                        )}
+                                        
+                                        <img src={player.avatar} alt={player.name} className="avatar" />
+                                        <span className="player-name">{player.nickname}</span>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                     <div className="start-btn-container">
@@ -82,15 +130,19 @@ export default function RoomCreate({ roomCode, players, onStart }) {
                                 fontSize: "16px",
                                 width: "290px",
                                 textTransform: "none",
-                                color: "black",
-                                backgroundColor: "#91d9bf",
-                                "&:hover": { backgroundColor: "#81c8af" },
+                                color: isHost ? "black" : "#666",
+                                backgroundColor: isHost ? "#91d9bf" : "#ccc",
+                                "&:hover": { 
+                                    backgroundColor: isHost ? "#81c8af" : "#ccc"
+                                },
                                 "&.Mui-focusVisible": { outline: "none" },
                                 "&:focus": { outline: "none" },
+                                cursor: isHost ? "pointer" : "not-allowed"
                             }}
-                            onClick={onStart}
+                            onClick={isHost ? onStart : undefined}
+                            disabled={!isHost}
                         >
-                            Start Game
+                            {isHost ? "Start Game" : `Đợi chủ phòng${dots}`}
                         </Button>
                     </div>
                 </div>

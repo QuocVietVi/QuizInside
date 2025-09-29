@@ -2,12 +2,15 @@ import React, { useState } from "react";
 import "./Home.css";
 import Button from "@mui/material/Button";
 import HomeContent from "../homeContent/HomeContent";
-import { joinRoom } from "../../services/gameService"; // import service
+import { joinRoom } from "../../services/gameService";
+import { useNavigate } from "react-router-dom";
 
 function Home() {
-  const BASE_URL = import.meta.env.BASE_URL; 
+  const BASE_URL = import.meta.env.BASE_URL;
   const [pin, setPin] = useState("");
-  const token = "demo-token-123"; // token mặc định
+  // Generate unique token for each session
+  const token = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const navigate = useNavigate();
 
   const handlePinChange = (e) => {
     let value = e.target.value;
@@ -20,14 +23,37 @@ function Home() {
   };
 
   const handleJoinGame = async () => {
+    const roomID = pin.replace(/\s/g, "");
+
+    // Validation
+    if (!roomID) {
+      alert("Vui lòng nhập mã PIN để tham gia game");
+      return;
+    }
+
+    if (roomID.length !== 6) {
+      alert("Mã PIN phải có đầy đủ 6 chữ số");
+      return;
+    }
+
+    if (!/^\d+$/.test(roomID)) {
+      alert("Mã PIN chỉ được chứa các chữ số");
+      return;
+    }
+
     try {
-      const roomID = pin.replace(" ", ""); // bỏ khoảng trắng
-      const res = await joinRoom(roomID, token, (msg) => {
-        console.log("WebSocket message:", msg);
+      console.log("Joining room with unique token:", token);
+      // Navigate to gameplay page with unique token
+      navigate("/gameplay", {
+        state: {
+          roomID: roomID,
+          isHost: false,
+          category: "Quiz", // sẽ được update từ server
+          token: token // Pass unique token
+        }
       });
-      console.log("Joined room:", res);
-      alert(`Bạn đã join vào phòng ${res.room_id}`);
     } catch (err) {
+      console.error("Navigation error:", err);
       alert("Lỗi join room: " + err.message);
     }
   };
@@ -82,7 +108,6 @@ function Home() {
           {/* Right side */}
           <div className="navbar-right">
             <div className="navbar-search">
-              <img src={`${BASE_URL}image/searchIcon.png`} alt="Search" />
             </div>
             <Button
               variant="contained"
@@ -118,7 +143,7 @@ function Home() {
         </div>
 
         <div className="navbar-join-mobile">
-          <span className="join-text">Join Game? Enter PIN:</span>
+          <span className="join-text">Enter PIN:</span>
           <input
             type="text"
             placeholder="123 456"
@@ -136,6 +161,11 @@ function Home() {
               backgroundColor: "#91d9bf",
               color: "black",
               "&:hover": { backgroundColor: "#81c8af" },
+              "@media (max-width: 648px)": {
+                position: "absolute",
+                right: 15,
+                textTransform: "none",
+              },
             }}
           >
             Join

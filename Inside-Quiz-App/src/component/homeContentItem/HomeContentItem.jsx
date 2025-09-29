@@ -57,9 +57,14 @@ function HomeContentItem({ quizList, title }) {
   const handleNext = () => setPage((prev) => Math.min(prev + 1, maxPage));
   const handlePrev = () => setPage((prev) => Math.max(prev - 1, 0));
 
-  // ✅ chỉ navigate sang gameplay, truyền title quiz
-  const handleGoToGameplay = (quizTitle) => {
-    navigate("/gameplay", { state: { title: quizTitle } });
+  // ✅ Navigate sang gameplay, truyền title làm category và đánh dấu là host
+  const handleGoToGameplay = (category) => {
+    navigate("/gameplay", {
+      state: {
+        category: category,
+        isHost: true, // đánh dấu là host khi tạo room từ home
+      },
+    });
   };
 
   const translateX = (() => {
