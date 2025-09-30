@@ -23,6 +23,8 @@ export default function QuizItemGameplay({
 
   const [inputValue, setInputValue] = useState("");
   const [inputDisabled, setInputDisabled] = useState(false);
+  const [incorrectAnswers, setIncorrectAnswers] = useState([]);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const timersRef = useRef([]);
   const progressIntervalRef = useRef(null);
@@ -40,6 +42,8 @@ export default function QuizItemGameplay({
     setDisabledAll(false);
     setInputValue("");
     setInputDisabled(false);
+    setIncorrectAnswers([]);
+    setShowFeedback(false);
     hasAnsweredRef.current = false;
 
     timersRef.current.forEach((t) => clearTimeout(t));
@@ -124,8 +128,18 @@ export default function QuizItemGameplay({
   };
 
   const handleInputSubmit = () => {
-    if (!inputValue.trim() || !showProgress) return;
+    if (!inputValue.trim() || !showProgress || inputDisabled) return;
+    
+    // Only show feedback state, don't add to incorrect answers yet
+    setShowFeedback(true);
     onSelectAnswer && onSelectAnswer(inputValue.trim());
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleInputSubmit();
+    }
   };
 
   const [zoom, setZoom] = useState(false);
@@ -137,20 +151,31 @@ export default function QuizItemGameplay({
 
   // --- Cập nhật feedback cho fill_in_the_blank
   useEffect(() => {
-    if (type === "fill_in_the_blank") {
+    if (type === "fill_in_the_blank" && answerFeedback !== null && showFeedback) {
       if (answerFeedback === true) {
         setInputDisabled(true);
+        hasAnsweredRef.current = true;
         // Dừng progress khi đúng
         if (progressIntervalRef.current) {
           clearInterval(progressIntervalRef.current);
           progressIntervalRef.current = null;
         }
       } else if (answerFeedback === false) {
+        // Add incorrect answer to list only when we get feedback
+        if (inputValue.trim() && !incorrectAnswers.includes(inputValue.trim())) {
+          setIncorrectAnswers(prev => [...prev, inputValue.trim()]);
+        }
         setInputDisabled(false);
+        setInputValue(""); // Clear input for retry
         // Không dừng progress khi sai
       }
+      
+      // Auto hide feedback after animation
+      setTimeout(() => {
+        setShowFeedback(false);
+      }, 500);
     }
-  }, [answerFeedback, type]);
+  }, [answerFeedback, type, showFeedback]);
 
   return (
     <div className="quiz-container">
@@ -195,7 +220,8 @@ export default function QuizItemGameplay({
                 disabled={inputDisabled || !showProgress}
                 placeholder="Nhập câu trả lời của bạn..."
                 className="fill-blank-input"
-                onKeyPress={(e) => e.key === 'Enter' && handleInputSubmit()}
+                onKeyDown={handleKeyDown}
+                autoComplete="off"
               />
             </div>
             <Button
@@ -206,20 +232,51 @@ export default function QuizItemGameplay({
             >
               Gửi đáp án
             </Button>
+            
             <div className="feedback-container">
-              {answerFeedback === true && (
-                <div className="feedback success animate-in">
-                  <span className="feedback-icon">✓</span>
-                  <span className="feedback-text">Chính xác!</span>
+              {showFeedback && answerFeedback === true && (
+                <div className="feedback success animate-success">
+                  <div className="feedback-icon-wrapper">
+                    <span className="feedback-icon success-icon">✓</span>
+                    <div className="success-particles">
+                      <div className="particle"></div>
+                      <div className="particle"></div>
+                      <div className="particle"></div>
+                      <div className="particle"></div>
+                    </div>
+                  </div>
+                  <span className="feedback-text">Chính xác! Tuyệt vời!</span>
                 </div>
               )}
-              {answerFeedback === false && (
-                <div className="feedback error animate-in">
-                  <span className="feedback-icon">✗</span>
+              {showFeedback && answerFeedback === false && (
+                <div className="feedback error animate-error">
+                  <div className="feedback-icon-wrapper">
+                    <span className="feedback-icon error-icon">✗</span>
+                    <div className="error-shake"></div>
+                  </div>
                   <span className="feedback-text">Sai rồi, thử lại nhé!</span>
                 </div>
               )}
             </div>
+
+            {/* Display incorrect answers */}
+            {type === "fill_in_the_blank" && incorrectAnswers.length > 0 && (
+              <div className="incorrect-answers-container">
+                <div className="incorrect-answers-title">Đáp án sai:</div>
+                <div className="incorrect-answers-list">
+                  {incorrectAnswers.map((answer, index) => (
+                    <div 
+                      key={index} 
+                      className="incorrect-answer-item"
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <span className="incorrect-icon">✗</span>
+                      <span className="incorrect-text">{answer}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -237,3 +294,4 @@ export default function QuizItemGameplay({
     </div>
   );
 }
+

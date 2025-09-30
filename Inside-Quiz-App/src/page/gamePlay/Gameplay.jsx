@@ -359,7 +359,6 @@ export default function Gameplay({ token }) {
           <button onClick={toggleFullscreen} className="zoom-btn">
             {isFullscreen ? <ZoomInMapIcon /> : <ZoomOutMapIcon />}
           </button>
-          <span>{category}</span>
           {connectionStatus !== "connected" && (
             <span style={{ marginLeft: "10px", color: "orange", fontSize: "12px" }}>
               {getConnectionStatusText()}

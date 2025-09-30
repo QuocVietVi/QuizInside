@@ -91,7 +91,7 @@ export default function RoomCreate({
                     <div className="players-container">
                         <div className="players-list">
                             {players.map((player, index) => {
-                                const isCurrentUser = currentUserId && player.id === currentUserId;
+                                const isCurrentUser = currentUserId && player.nickname === currentUserId;
                                 const isHostPlayer = index === 0; // Giả sử player đầu tiên là host
                                 
                                 return (
