@@ -5,7 +5,7 @@ import HomeContentItem from "../../component/homeContentItem/HomeContentItem";
 import LeaderBoardItem from "../../component/leaderBoardItem/LeaderBoardItem";
 
 
-export default function HomeContent() {
+export default function HomeContent({ isLoggedIn, userToken }) {
     const quizzes = [
         { name: "Meo Meo", author: "Quoc Viet Vi", img: `${import.meta.env.BASE_URL}image/quiz1.png` },
         { name: "Hamster Cute", author: "Quoc Viet Vi", img: `${import.meta.env.BASE_URL}image/quiz5.png` },
@@ -167,12 +167,12 @@ export default function HomeContent() {
             </div>
 
             <div>
-                <HomeContentItem quizList={quizzes} title="Công nghệ" />
-                <HomeContentItem quizList={quizzes2} title="Phim ảnh" />
-                <HomeContentItem quizList={quizzes3} title="Thể thao" />
-                <HomeContentItem quizList={quizzes3} title="Lịch sử Việt Nam" />
-                <HomeContentItem quizList={quizzes3} title="Âm nhạc" />
-                <HomeContentItem quizList={quizzes3} title="Động vật" />
+                <HomeContentItem quizList={quizzes} title="Công nghệ" isLoggedIn={isLoggedIn} userToken={userToken} />
+                <HomeContentItem quizList={quizzes2} title="Phim ảnh" isLoggedIn={isLoggedIn} userToken={userToken} />
+                <HomeContentItem quizList={quizzes3} title="Thể thao" isLoggedIn={isLoggedIn} userToken={userToken} />
+                <HomeContentItem quizList={quizzes3} title="Lịch sử Việt Nam" isLoggedIn={isLoggedIn} userToken={userToken} />
+                <HomeContentItem quizList={quizzes3} title="Âm nhạc" isLoggedIn={isLoggedIn} userToken={userToken} />
+                <HomeContentItem quizList={quizzes3} title="Động vật" isLoggedIn={isLoggedIn} userToken={userToken} />
             </div>
         </div>
     );

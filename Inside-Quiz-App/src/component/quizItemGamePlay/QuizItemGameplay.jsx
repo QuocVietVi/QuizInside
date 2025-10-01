@@ -53,15 +53,19 @@ export default function QuizItemGameplay({
       progressIntervalRef.current = null;
     }
 
+    // Calculate delay per character to complete in 1 second (1000ms)
+    const totalLoadTime = 1000;
+    const charDelay = question.length > 0 ? totalLoadTime / question.length : 0;
+
     for (let i = 0; i < question.length; i++) {
       const t = setTimeout(() => {
         setDisplayedText((prev) => prev + question.charAt(i));
-      }, i * 50);
+      }, i * charDelay);
       timersRef.current.push(t);
     }
 
-    // Hiển thị buttons
-    const buttonsDelay = question.length * 50;
+    // Hiển thị buttons - always start after 1 second
+    const buttonsDelay = totalLoadTime;
     if (type === "multiple_choice") {
       for (let k = 0; k < answers.length; k++) {
         const t = setTimeout(() => {

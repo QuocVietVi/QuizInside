@@ -51,6 +51,12 @@ body {
   /* khoảng cách giữa logo, mã phòng, số người */
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .zoom-btn {
   border: none;
   background: none;
@@ -80,5 +86,17 @@ body {
 
   .zoom-btn {
     display: none;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
   }
 }
