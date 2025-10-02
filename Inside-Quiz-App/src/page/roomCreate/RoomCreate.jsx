@@ -114,7 +114,7 @@ export default function RoomCreate({
                                             />
                                         )}
                                         
-                                        <img src={player.avatar} alt={player.name} className="avatar" />
+                                        <img src={player.avatar} alt={player.nickname} className="avatar" />
                                         <span className="player-name">{player.nickname}</span>
                                     </div>
                                 );

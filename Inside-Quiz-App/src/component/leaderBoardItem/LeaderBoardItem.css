@@ -57,6 +57,7 @@
     overflow: hidden;
     /* ẩn phần tràn */
     text-overflow: ellipsis;
+    width:92px;
 }
 
 .leaderboard-bottom {

@@ -19,6 +19,7 @@ import {
   checkSession,
   initiateLogin,
 } from "../../services/gameService";
+import { setLoading } from "../../services/loadingService";
 
 export default function Gameplay() {
   const location = useLocation();
@@ -82,6 +83,7 @@ export default function Gameplay() {
   const [correctId, setCorrectId] = useState(null);
   const [answerFeedback, setAnswerFeedback] = useState(null);
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState(0);
+  const [showX2Animation, setShowX2Animation] = useState(false);
 
   const retryCountRef = useRef(0);
   const maxRetries = 3;
@@ -99,7 +101,6 @@ export default function Gameplay() {
         setPlayers(
           msg.payload.players?.map((p, i) => ({
             ...p,
-            avatar: `https://i.pravatar.cc/50?img=${i + 1}`,
           })) || []
         );
         if (msg.payload.current_user_id) {
@@ -112,7 +113,6 @@ export default function Gameplay() {
         setPlayers(
           msg.payload.players?.map((p, i) => ({
             ...p,
-            avatar: `https://i.pravatar.cc/50?img=${i + 1}`,
           })) || []
         );
         if (msg.payload.current_user_id) {
@@ -125,7 +125,6 @@ export default function Gameplay() {
           msg.payload.players?.map((p, i) => ({
             ...p,
             // Use modulo to cycle through available avatars for unlimited players
-            avatar: `https://i.pravatar.cc/50?img=${(i % 70) + 1}`,
           })) || []
         );
         if (msg.payload.current_user_id) {
@@ -139,7 +138,18 @@ export default function Gameplay() {
         setScreen("quiz");
         setCorrectId(null);
         setAnswerFeedback(null);
-        setCurrentQuestionNumber(prev => prev + 1);
+        setCurrentQuestionNumber(prev => {
+          const newNumber = prev + 1;
+          // Show x2 animation for question 10
+          if (newNumber === 10) {
+            setShowX2Animation(true);
+            // Hide animation after 1.5 seconds
+            setTimeout(() => {
+              setShowX2Animation(false);
+            }, 1500);
+          }
+          return newNumber;
+        });
         break;
 
       case "answer_feedback":
@@ -151,11 +161,15 @@ export default function Gameplay() {
         const topPlayers = msg.payload.leaderboard?.slice(0, 10) || [];
         setLeaderboard(calculateScores(topPlayers));
         setCorrectId(msg.payload.correct_id);
+        
+        // Add extra delay for question 10 (final question)
+        const delayTime = currentQuestionNumber === 10 ? 5000 : 3000;
+        
         setTimeout(() => {
           setScreen("leaderboard");
           setCorrectId(null);
           setAnswerFeedback(null);
-        }, 3000);
+        }, delayTime);
         break;
 
       case "game_over":
@@ -355,6 +369,8 @@ export default function Gameplay() {
       isComponentMounted.current = false;
       retryCountRef.current = maxRetries; // Stop retries when component unmounts
       leaveRoom(); // Clean disconnect
+      // Ensure global loading overlay is cleared when leaving gameplay
+      setLoading(false);
     };
   }, []); // Remove dependencies to prevent re-runs
 
@@ -454,6 +470,7 @@ export default function Gameplay() {
             src={`${import.meta.env.BASE_URL}logo/logo.png`}
             alt="Logo"
             className="logo"
+            onClick={() => window.location.href = "/"}
           />
           <span className="room-code">PIN: {roomID || "..."}</span>
           <img
@@ -580,15 +597,41 @@ export default function Gameplay() {
       )}
 
       {connectionStatus === "connected" && screen === "quiz" && question && (
-        <QuizItemGameplay
-          question={question.text}
-          answers={question.options}
-          image={question.image}
-          correctIndex={correctId}
-          answerFeedback={answerFeedback}
-          onSelectAnswer={handleAnswer}
-          type={question.type}
-        />
+        <>
+          {showX2Animation && (
+            <div className="x2-animation-overlay">
+              <div className="x2-animation-container">
+                <div className="x2-text">
+                  <span className="x2-multiplier">x2</span>
+                  <span className="x2-points">ĐIỂM</span>
+                </div>
+                <div className="x2-particles">
+                  {[...Array(20)].map((_, i) => (
+                    <div 
+                      key={i} 
+                      className="x2-particle"
+                      style={{
+                        '--delay': `${i * 0.1}s`,
+                        '--angle': `${(i * 18)}deg`
+                      }}
+                    ></div>
+                  ))}
+                </div>
+                <div className="x2-glow"></div>
+                <div className="x2-ring"></div>
+              </div>
+            </div>
+          )}
+          <QuizItemGameplay
+            question={question.text}
+            answers={question.options}
+            image={question.image}
+            correctIndex={correctId}
+            answerFeedback={answerFeedback}
+            onSelectAnswer={handleAnswer}
+            type={question.type}
+          />
+        </>
       )}
 
       {connectionStatus === "connected" && screen === "leaderboard" && (

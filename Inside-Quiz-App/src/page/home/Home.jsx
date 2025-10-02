@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import "./Home.css";
 import Button from "@mui/material/Button";
 import HomeContent from "../homeContent/HomeContent";
-import { checkSession, initiateLogin, handleLoginCallback, logout } from "../../services/gameService";
+import { checkSession, initiateLogin, handleLoginCallback, logout, loadCategories } from "../../services/gameService";
 import { useNavigate } from "react-router-dom";
+import LoadingOverlay from "../../component/loading/LoadingOverlay";
+import { setLoading } from "../../services/loadingService";
 
-function Home() {
+export default function Home() {
   const BASE_URL = import.meta.env.BASE_URL;
+  const [navCategories, setNavCategories] = useState([]);
   const [pin, setPin] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -44,6 +47,17 @@ function Home() {
     }, 5 * 60 * 1000); // Check every 5 minutes
     
     return () => clearInterval(sessionInterval);
+  }, []);
+
+  // Ensure global loading overlay is cleared when Home mounts
+  // and also when user navigates via browser back button (popstate).
+  useEffect(() => {
+    setLoading(false);
+    const handlePopState = () => setLoading(false);
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, []);
 
   // Add a debug function to check token status
@@ -90,7 +104,8 @@ function Home() {
   const handleOAuthCallback = async (token) => {
     setIsLoading(true);
     setLoginError(null);
-    
+    setLoading(true); // show global overlay while processing callback
+
     try {
       console.log('Processing OAuth callback with token:', token);
       console.log('This is OAuth token, will exchange for accessToken...');
@@ -99,18 +114,47 @@ function Home() {
       console.log('handleLoginCallback result:', result);
       
       if (result.success) {
-        setCurrentUser(result.data);
-        setIsLoggedIn(true);
-        setLoginError(null);
-        
-        // The result.token is now the accessToken, not the OAuth token
+        // Store preliminary data from callback
+        const callbackUser = result.data;
         const accessToken = result.token;
-        setUserToken(accessToken);
-        localStorage.setItem('userToken', accessToken);
-        sessionStorage.setItem('userToken', accessToken);
-        
-        console.log('AccessToken stored successfully:', accessToken);
-        console.log('User data:', result.data);
+
+        // persist token immediately
+        if (accessToken) {
+          setUserToken(accessToken);
+          localStorage.setItem('userToken', accessToken);
+          sessionStorage.setItem('userToken', accessToken);
+          window.authToken = accessToken;
+        }
+
+        // Try to verify session with server to get canonical user object
+        try {
+          const verifyResult = await checkSession();
+          console.log('Immediate session verification result:', verifyResult);
+
+          if (verifyResult && verifyResult.success) {
+            // Use verified user & token (if provided)
+            setCurrentUser(verifyResult.user || callbackUser || null);
+            setIsLoggedIn(true);
+            const tokenFromVerify = verifyResult.token || accessToken;
+            if (tokenFromVerify) {
+              setUserToken(tokenFromVerify);
+              localStorage.setItem('userToken', tokenFromVerify);
+              sessionStorage.setItem('userToken', tokenFromVerify);
+              window.authToken = tokenFromVerify;
+            }
+          } else {
+            // Fallback to callback-provided user if verification didn't return user
+            setCurrentUser(callbackUser || null);
+            setIsLoggedIn(true);
+          }
+        } catch (verifyErr) {
+          console.error('Session verification failed after callback:', verifyErr);
+          // Still set user from callback as fallback
+          setCurrentUser(callbackUser || null);
+          setIsLoggedIn(true);
+        }
+
+        setLoginError(null);
         
         // Clean up URL parameters
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -125,18 +169,6 @@ function Home() {
         successMsg.textContent = '✓ Đăng nhập thành công!';
         document.body.appendChild(successMsg);
         setTimeout(() => successMsg.remove(), 3000);
-        
-        // Force a session check after a short delay to verify accessToken works
-        setTimeout(async () => {
-          console.log('Verifying session with accessToken...');
-          const verifyResult = await checkSession();
-          console.log('Session verification result:', verifyResult);
-          
-          if (!verifyResult.success) {
-            console.error('AccessToken verification failed:', verifyResult.error);
-            setLoginError('AccessToken không hợp lệ. Vui lòng thử đăng nhập lại.');
-          }
-        }, 1000);
         
       } else {
         throw new Error(result.error);
@@ -153,6 +185,7 @@ function Home() {
       // Show error message
       alert('Đăng nhập thất bại: ' + error.message);
     } finally {
+      setLoading(false); // đảm bảo hide overlay
       setIsLoading(false);
     }
   };
@@ -214,12 +247,15 @@ function Home() {
       setLoginError(null);
       
       try {
+        setLoading(true); // show overlay while initiating login
         await initiateLogin();
         // initiateLogin will redirect, so we won't reach here normally
+        setLoading(false);
       } catch (error) {
         console.error('Login error:', error);
         setLoginError(error.message);
         setIsLoading(false);
+        setLoading(false);
         
         // Show detailed error message
         let errorMsg = 'Không thể đăng nhập';
@@ -312,6 +348,7 @@ function Home() {
 
     try {
       console.log("Joining room with OAuth token:", userToken);
+      setLoading(true); // show overlay while navigating
       navigate("/gameplay", {
         state: {
           roomID: roomID,
@@ -322,24 +359,88 @@ function Home() {
       });
     } catch (err) {
       console.error("Navigation error:", err);
+      setLoading(false);
       alert("Lỗi join room: " + err.message);
     }
   };
 
-  const categories = [
-    { label: "Home", icon: "icon/iconHome.png" },
-    { label: "Appota Learn", icon: "icon/iconAppota.png" },
-    { label: "Sports", icon: "icon/iconSport.png" },
-    { label: "Movies", icon: "icon/iconMovie.png" },
-    { label: "Games", icon: "icon/iconGame.png" },
-    { label: "Geography", icon: "icon/iconGeography.png" },
-    { label: "History", icon: "icon/iconHistory.png" },
-  ];
+  // Fetch sub-navbar categories from server and ensure "Home" is first
+  useEffect(() => {
+    let mounted = true;
+    const pickIconFor = (name, idx) => {
+      if (!name) return `${BASE_URL}icon/iconGame.png`;
+      const n = name.toLowerCase();
+      if (n.includes("home")) return `${BASE_URL}icon/iconHome.png`;
+      if (n.includes("thể thao")) return `${BASE_URL}icon/iconSport.png`;
+      if (n.includes("phim ảnh")) return `${BASE_URL}icon/iconMovie.png`;
+      if (n.includes("game") || n.includes("games")) return `${BASE_URL}icon/iconGame.png`;
+      if (n.includes("geo") || n.includes("map") || n.includes("địa")) return `${BASE_URL}icon/iconGeography.png`;
+      if (n.includes("hist") || n.includes("lịch")) return `${BASE_URL}icon/iconHistory.png`;
+      if (n.includes("âm nhạc")) return `${BASE_URL}icon/iconMusic.png`;
+      if (n.includes("công nghệ") || n.includes("technology")) return `${BASE_URL}icon/iconTech.png`;
+      if (n.includes("khoa học") || n.includes("science")) return `${BASE_URL}icon/iconScience.png`;
+      if (n.includes("văn học")) return `${BASE_URL}icon/iconLiterature.png`;
+      if (n.includes("động vật")) return `${BASE_URL}icon/iconAnimal.png`;
+      if (n.includes("ẩm thực")) return `${BASE_URL}icon/iconFood.png`;
+
+      return `${BASE_URL}image/quiz${(idx % 12) + 1}.png`;
+    };
+
+    const loadNav = async () => {
+      try {
+        const res = await loadCategories();
+        let items = [];
+        if (res.success && Array.isArray(res.categories) && res.categories.length) {
+          items = res.categories.map((c, i) => {
+            const label = c.name || c.title || `Category ${i + 1}`;
+            // If server provided an image, normalize it to a usable URL
+            let iconUrl = null;
+            if (c.image) {
+              const img = String(c.image || "").trim();
+              if (img.startsWith("http") || img.startsWith("/")) iconUrl = img;
+              else iconUrl = `${BASE_URL}${img}`;
+            } else {
+              iconUrl = pickIconFor(label, i);
+            }
+            return {
+              id: c.id || i,
+              label,
+              icon: iconUrl
+            };
+          });
+        } else {
+          // fallback minimal categories
+          items = [
+            { id: "tech", label: "Appota Learn", icon: `${BASE_URL}icon/iconAppota.png` },
+            { id: "sport", label: "Sports", icon: `${BASE_URL}icon/iconSport.png` },
+            { id: "movie", label: "Movies", icon: `${BASE_URL}icon/iconMovie.png` },
+            { id: "game", label: "Games", icon: `${BASE_URL}icon/iconGame.png` },
+          ];
+        }
+
+        // Ensure Home is first
+        const homeItem = { id: "home", label: "Home", icon: `${BASE_URL}icon/iconHome.png` };
+        const finalList = [homeItem, ...items.filter(it => it.label !== "Home")];
+
+        if (mounted) {
+          setNavCategories(finalList);
+          // ensure active index exists
+          setActiveIndex(prev => (prev < finalList.length ? prev : 0));
+        }
+      } catch (err) {
+        console.error("Failed to load nav categories:", err);
+      }
+    };
+
+    loadNav();
+    return () => { mounted = false; };
+  }, [BASE_URL]);
 
   const [activeIndex, setActiveIndex] = useState(0);
 
   return (
     <div className="home">
+      <LoadingOverlay />
       <div className="navbar-container">
         {/* Navbar chính */}
         <div className="navbar">
@@ -488,13 +589,14 @@ function Home() {
 
         {/* Navbar phụ */}
         <div className="sub-navbar">
-          {categories.map((cat, index) => (
+          {navCategories.map((cat, index) => (
             <div
-              key={index}
+              key={cat.id || index}
               className={`category ${activeIndex === index ? "active" : ""}`}
               onClick={() => setActiveIndex(index)}
             >
-              <img src={`${BASE_URL}${cat.icon}`} alt={cat.label} />
+              {/* cat.icon is already a normalized URL (absolute or starts with /) */}
+              <img src={cat.icon} alt={cat.label} />
               <span>{cat.label}</span>
             </div>
           ))}
@@ -537,5 +639,3 @@ function Home() {
     </div>
   );
 }
-
-export default Home;

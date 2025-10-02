@@ -5,7 +5,6 @@ export default function LeaderBoardGamePlay({ leaderboard = [] }) {
     // Remove the demo players state and use the leaderboard prop instead
     const playersWithScore = leaderboard.map((player, index) => ({
         ...player,
-        avatar: `https://i.pravatar.cc/50?img=${index + 1}`,
         rank: index + 1,
     }));
 

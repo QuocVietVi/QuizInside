@@ -3,6 +3,7 @@ import "./HomeContent.css";
 import Button from "@mui/material/Button";
 import HomeContentItem from "../../component/homeContentItem/HomeContentItem";
 import LeaderBoardItem from "../../component/leaderBoardItem/LeaderBoardItem";
+import { loadGlobalLeaderboard } from "../../services/gameService"; // <-- added import
 
 
 export default function HomeContent({ isLoggedIn, userToken }) {
@@ -56,6 +57,10 @@ export default function HomeContent({ isLoggedIn, userToken }) {
     const [screenWidth, setScreenWidth] = useState(window.innerWidth);
     const [isBouncing, setIsBouncing] = useState(false);
 
+    // New state for top players
+    const [topPlayers, setTopPlayers] = useState([]);
+    const [loadingTopPlayers, setLoadingTopPlayers] = useState(true);
+
     useEffect(() => {
         const interval = setInterval(() => {
             setIsBouncing(true);
@@ -68,6 +73,29 @@ export default function HomeContent({ isLoggedIn, userToken }) {
         const handleResize = () => setScreenWidth(window.innerWidth);
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    // Fetch top leaderboard on mount
+    useEffect(() => {
+        let mounted = true;
+        async function fetchTop() {
+            try {
+                const res = await loadGlobalLeaderboard();
+                if (!mounted) return;
+                if (res.success && Array.isArray(res.leaderboard) && res.leaderboard.length > 0) {
+                    setTopPlayers(res.leaderboard.slice(0, 4));
+                } else {
+                    setTopPlayers([]); // will fall back to static UI below
+                }
+            } catch (e) {
+                console.error("Load top leaderboard failed:", e);
+                setTopPlayers([]);
+            } finally {
+                if (mounted) setLoadingTopPlayers(false);
+            }
+        }
+        fetchTop();
+        return () => { mounted = false; };
     }, []);
 
     return (
@@ -84,10 +112,38 @@ export default function HomeContent({ isLoggedIn, userToken }) {
 
                         <h1>Leaderboard</h1>
                         <div className="leaderboard-top4">
-                            <LeaderBoardItem avatar={`${import.meta.env.BASE_URL}image/author.png`} icon={`${import.meta.env.BASE_URL}image/top1.png`} name={"Quoc Viet Vi"} isTop3={true} />
-                            <LeaderBoardItem avatar={`${import.meta.env.BASE_URL}image/author2.png`} icon={`${import.meta.env.BASE_URL}image/top2.png`} name={"Quoc Viet Vi"} isTop3={true} />
-                            <LeaderBoardItem className="l3" avatar={`${import.meta.env.BASE_URL}image/author3.png`} icon={`${import.meta.env.BASE_URL}image/top3.png`} name={"Quoc Viet Vi"} isTop3={true} />
-                            <LeaderBoardItem className="l4" avatar={`${import.meta.env.BASE_URL}image/author4.png`} icon={`${import.meta.env.BASE_URL}image/top1.png`} name={"Quoc Viet Vi"} rank={4} isTop3={false} />
+                            { /* If we have fetched top players, render them; otherwise keep the original static items */ }
+                            {topPlayers.length > 0 ? (
+                                topPlayers.map((p, idx) => {
+                                    const icon = idx === 0
+                                        ? `${import.meta.env.BASE_URL}image/top1.png`
+                                        : idx === 1
+                                            ? `${import.meta.env.BASE_URL}image/top2.png`
+                                            : idx === 2
+                                                ? `${import.meta.env.BASE_URL}image/top3.png`
+                                                : `${import.meta.env.BASE_URL}image/top1.png`;
+                                    const avatar = p.avatar || `${import.meta.env.BASE_URL}image/author.png`;
+                                    const name = p.nickname || p.username || p.display_name || `Player ${idx + 1}`;
+                                    return (
+                                        <LeaderBoardItem
+                                            key={idx}
+                                            avatar={avatar}
+                                            icon={icon}
+                                            name={name}
+                                            rank={idx + 1}
+                                            isTop3={idx < 3}
+                                        />
+                                    );
+                                })
+                            ) : (
+                                // ...existing static fallback items...
+                                <>
+                                    <LeaderBoardItem avatar={`${import.meta.env.BASE_URL}image/author.png`} icon={`${import.meta.env.BASE_URL}image/top1.png`} name={"Quoc Viet Vi"} isTop3={true} />
+                                    <LeaderBoardItem avatar={`${import.meta.env.BASE_URL}image/author2.png`} icon={`${import.meta.env.BASE_URL}image/top2.png`} name={"Quoc Viet Vi"} isTop3={true} />
+                                    <LeaderBoardItem className="l3" avatar={`${import.meta.env.BASE_URL}image/author3.png`} icon={`${import.meta.env.BASE_URL}image/top3.png`} name={"Quoc Viet Vi"} isTop3={true} />
+                                    <LeaderBoardItem className="l4" avatar={`${import.meta.env.BASE_URL}image/author4.png`} icon={`${import.meta.env.BASE_URL}image/top1.png`} name={"Quoc Viet Vi"} rank={4} isTop3={false} />
+                                </>
+                            )}
                         </div>
 
                         <Button
@@ -168,11 +224,6 @@ export default function HomeContent({ isLoggedIn, userToken }) {
 
             <div>
                 <HomeContentItem quizList={quizzes} title="Công nghệ" isLoggedIn={isLoggedIn} userToken={userToken} />
-                <HomeContentItem quizList={quizzes2} title="Phim ảnh" isLoggedIn={isLoggedIn} userToken={userToken} />
-                <HomeContentItem quizList={quizzes3} title="Thể thao" isLoggedIn={isLoggedIn} userToken={userToken} />
-                <HomeContentItem quizList={quizzes3} title="Lịch sử Việt Nam" isLoggedIn={isLoggedIn} userToken={userToken} />
-                <HomeContentItem quizList={quizzes3} title="Âm nhạc" isLoggedIn={isLoggedIn} userToken={userToken} />
-                <HomeContentItem quizList={quizzes3} title="Động vật" isLoggedIn={isLoggedIn} userToken={userToken} />
             </div>
         </div>
     );
