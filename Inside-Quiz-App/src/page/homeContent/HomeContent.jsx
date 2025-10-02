@@ -112,7 +112,7 @@ export default function HomeContent({ isLoggedIn, userToken }) {
 
                         <h1>Leaderboard</h1>
                         <div className="leaderboard-top4">
-                            { /* If we have fetched top players, render them; otherwise keep the original static items */ }
+                            { /* If we have fetched top players, render them; otherwise keep the original static items */}
                             {topPlayers.length > 0 ? (
                                 topPlayers.map((p, idx) => {
                                     const icon = idx === 0
@@ -132,6 +132,7 @@ export default function HomeContent({ isLoggedIn, userToken }) {
                                             name={name}
                                             rank={idx + 1}
                                             isTop3={idx < 3}
+                                            className={idx === 3 ? "l4" : "" }
                                         />
                                     );
                                 })

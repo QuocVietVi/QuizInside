@@ -257,8 +257,16 @@ async function checkSessionBackground() {
 export async function initiateLogin() {
   try {
     // Step 1: Get login code and generate login URL
-    // For redirect URL, always use the current protocol and redirect to home
-    const redirectUrl = `${window.location.protocol}//${window.location.host}/`;
+    // For GitHub Pages deployment, use the correct subdirectory path
+    let redirectUrl;
+    
+    if (window.location.hostname === 'quocvietvi.github.io') {
+      // GitHub Pages deployment
+      redirectUrl = 'https://quocvietvi.github.io/QuizInsideBuild/';
+    } else {
+      // Local development or other deployment
+      redirectUrl = `${window.location.protocol}//${window.location.host}/`;
+    }
     
     console.log('Sending login request with redirectUrl:', redirectUrl);
     

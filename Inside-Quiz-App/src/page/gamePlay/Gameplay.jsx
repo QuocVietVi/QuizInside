@@ -1,6 +1,7 @@
 // Gameplay.jsx
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "./Gameplay.css";
 import ZoomOutMapIcon from "@mui/icons-material/ZoomOutMap";
 import ZoomInMapIcon from "@mui/icons-material/ZoomInMap";
@@ -26,27 +27,27 @@ export default function Gameplay() {
   const category = location.state?.category || "Công nghệ";
   const isHost = location.state?.isHost !== false;
   const joinedRoomID = location.state?.roomID;
-  
+  const navigate = useNavigate();
   // Enhanced token retrieval with comprehensive debugging
   let userToken = location.state?.token;
-  
+
   console.log('=== Gameplay Token Debug ===');
   console.log('Token from navigation state:', userToken);
-  
+
   // If no token from navigation state, try other sources
   if (!userToken) {
     console.log('No token from navigation, trying storage...');
-    
-    userToken = localStorage.getItem('userToken') || 
-               sessionStorage.getItem('userToken');
-    
+
+    userToken = localStorage.getItem('userToken') ||
+      sessionStorage.getItem('userToken');
+
     console.log('Token from storage:', userToken);
-    
+
     if (!userToken) {
       // Try cookies
       const cookies = document.cookie.split('; ');
       console.log('Checking cookies:', cookies);
-      
+
       const possibleCookieNames = ['token', 'access_token', 'auth_token', 'jwt'];
       for (const cookieName of possibleCookieNames) {
         const cookieToken = cookies.find(row => row.startsWith(`${cookieName}=`))?.split('=')[1];
@@ -58,7 +59,7 @@ export default function Gameplay() {
       }
     }
   }
-  
+
   // Final fallback - generate token (should rarely be used)
   if (!userToken) {
     userToken = `fallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -161,10 +162,10 @@ export default function Gameplay() {
         const topPlayers = msg.payload.leaderboard?.slice(0, 10) || [];
         setLeaderboard(calculateScores(topPlayers));
         setCorrectId(msg.payload.correct_id);
-        
+
         // Add extra delay for question 10 (final question)
         const delayTime = currentQuestionNumber === 10 ? 5000 : 3000;
-        
+
         setTimeout(() => {
           setScreen("leaderboard");
           setCorrectId(null);
@@ -240,7 +241,7 @@ export default function Gameplay() {
     const loginResult = await checkSession();
     console.log('Login check result in gameplay:', loginResult);
     setUserLoginStatus(loginResult);
-    
+
     if (!loginResult.success) {
       console.error("User not logged in");
       setConnectionStatus("error");
@@ -257,10 +258,10 @@ export default function Gameplay() {
 
     // Try to get fresh token from login result if current token is fallback
     if (userToken.startsWith('fallback_') && loginResult.success) {
-      const freshToken = loginResult.token || 
-                        loginResult.user?.token || 
-                        loginResult.access_token;
-      
+      const freshToken = loginResult.token ||
+        loginResult.user?.token ||
+        loginResult.access_token;
+
       if (freshToken) {
         console.log('Replacing fallback token with fresh token:', freshToken);
         userToken = freshToken;
@@ -291,7 +292,7 @@ export default function Gameplay() {
     }
 
     hasInitialized.current = true;
-    
+
     // Reset question number when starting new game
     setCurrentQuestionNumber(0);
 
@@ -461,6 +462,9 @@ export default function Gameplay() {
         return "";
     }
   };
+  const backToHome = () => {
+    navigate("/");
+  };
 
   return (
     <div className="gameplay">
@@ -470,7 +474,7 @@ export default function Gameplay() {
             src={`${import.meta.env.BASE_URL}logo/logo.png`}
             alt="Logo"
             className="logo"
-            onClick={() => window.location.href = "/"}
+            onClick={backToHome}
           />
           <span className="room-code">PIN: {roomID || "..."}</span>
           <img
@@ -487,12 +491,12 @@ export default function Gameplay() {
               display: "flex",
               alignItems: "center"
             }}>
-              <span style={{ 
+              <span style={{
                 fontWeight: "bold",
                 color: "rgb(253, 238, 224)",
                 webkitTextStroke: "1px rgb(253, 238, 224)",
-                fontSize: "16px", 
-                marginRight: "8px" 
+                fontSize: "16px",
+                marginRight: "8px"
               }}>
                 {currentQuestionNumber}/10
               </span>
@@ -576,7 +580,7 @@ export default function Gameplay() {
             </Button>
             <Button
               variant="outlined"
-              onClick={() => window.location.href = "/"}
+              onClick={navigate("/")}
               sx={{ color: "white", borderColor: "white" }}
             >
               Về trang chủ
@@ -607,8 +611,8 @@ export default function Gameplay() {
                 </div>
                 <div className="x2-particles">
                   {[...Array(20)].map((_, i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       className="x2-particle"
                       style={{
                         '--delay': `${i * 0.1}s`,
