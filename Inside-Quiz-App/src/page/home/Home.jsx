@@ -166,7 +166,7 @@ export default function Home() {
           background: #4CAF50; color: white; padding: 12px 24px;
           border-radius: 8px; font-weight: 600;
         `;
-        successMsg.textContent = '✓ Đăng nhập thành công!';
+        //successMsg.textContent = '✓ Đăng nhập thành công!';
         document.body.appendChild(successMsg);
         setTimeout(() => successMsg.remove(), 3000);
         

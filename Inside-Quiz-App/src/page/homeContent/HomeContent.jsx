@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import "./HomeContent.css";
 import Button from "@mui/material/Button";
 import HomeContentItem from "../../component/homeContentItem/HomeContentItem";
@@ -7,6 +8,7 @@ import { loadGlobalLeaderboard } from "../../services/gameService"; // <-- added
 
 
 export default function HomeContent({ isLoggedIn, userToken }) {
+    const navigate = useNavigate();
     const quizzes = [
         { name: "Meo Meo", author: "Quoc Viet Vi", img: `${import.meta.env.BASE_URL}image/quiz1.png` },
         { name: "Hamster Cute", author: "Quoc Viet Vi", img: `${import.meta.env.BASE_URL}image/quiz5.png` },
@@ -132,7 +134,7 @@ export default function HomeContent({ isLoggedIn, userToken }) {
                                             name={name}
                                             rank={idx + 1}
                                             isTop3={idx < 3}
-                                            className={idx === 3 ? "l4" : "" }
+                                            className={idx === 3 ? "l4" : ""}
                                         />
                                     );
                                 })
@@ -149,6 +151,7 @@ export default function HomeContent({ isLoggedIn, userToken }) {
 
                         <Button
                             variant="contained"
+                            onClick={() => navigate('/leaderboard')}
                             className={isBouncing ? "bounce-button" : ""}
                             sx={{
                                 borderRadius: "25px",
@@ -171,6 +174,11 @@ export default function HomeContent({ isLoggedIn, userToken }) {
                                 },
                                 "@media (max-width: 648px)": {
                                     marginTop: "5px",
+
+                                },
+                                "@media (max-width: 1200px)": {
+                                    marginBottom: "13px",
+                                    marginTop: "-5px",
                                 },
                             }}>
                             View All
@@ -194,6 +202,7 @@ export default function HomeContent({ isLoggedIn, userToken }) {
 
                         <Button
                             variant="contained"
+                            onClick={() => navigate('/leaderboard')}
                             className={isBouncing ? "bounce-button" : ""}
                             sx={{
                                 borderRadius: "25px",
@@ -214,7 +223,10 @@ export default function HomeContent({ isLoggedIn, userToken }) {
                                     outline: "none",
                                 },
                                 "@media (max-width: 648px)": {
-                                    marginTop: "5px",
+                                    marginTop: "15px",
+                                    marginBottom: "15px",
+                                    
+
                                 },
                             }}>
                             View all

@@ -91,6 +91,15 @@ export default function Gameplay() {
   const hasInitialized = useRef(false);
   const isComponentMounted = useRef(true);
 
+  // New refs to hold leaderboard display and queue next question
+  const leaderboardHoldRef = useRef(false);
+  const pendingQuestionRef = useRef(null);
+  const leaderboardTimeoutRef = useRef(null);
+
+  // New refs for the initial delay before opening leaderboard
+  const leaderboardInitialDelayRef = useRef(null);
+  const leaderboardInitialDelayActiveRef = useRef(false);
+
   // --- WebSocket callback với error handling
   const handleMessage = (msg) => {
     console.log("Received message:", msg);
@@ -135,6 +144,13 @@ export default function Gameplay() {
         break;
 
       case "question":
+        // If we are holding leaderboard visible or in the initial delay, queue the question
+        if (leaderboardHoldRef.current || leaderboardInitialDelayActiveRef.current) {
+          pendingQuestionRef.current = msg;
+          console.log("Question queued until leaderboard hold ends");
+          return;
+        }
+        // Otherwise process immediately
         setQuestion(msg.payload.question);
         setScreen("quiz");
         setCorrectId(null);
@@ -163,14 +179,56 @@ export default function Gameplay() {
         setLeaderboard(calculateScores(topPlayers));
         setCorrectId(msg.payload.correct_id);
 
-        // Add extra delay for question 10 (final question)
-        const delayTime = currentQuestionNumber === 10 ? 5000 : 3000;
+        // Keep older behaviour: wait a short initial delay, then open leaderboard,
+        // then keep leaderboard visible for a longer hold period.
+        const initialDelay = currentQuestionNumber === 10 ? 3000 : 1800;// 1 second before showing leaderboard
+        const holdTime = currentQuestionNumber === 10 ? 10000 : 4000; // how long leaderboard stays visible
 
-        setTimeout(() => {
+        // Clear any existing timeouts
+        if (leaderboardTimeoutRef.current) {
+          clearTimeout(leaderboardTimeoutRef.current);
+          leaderboardTimeoutRef.current = null;
+        }
+        if (leaderboardInitialDelayRef.current) {
+          clearTimeout(leaderboardInitialDelayRef.current);
+          leaderboardInitialDelayRef.current = null;
+        }
+
+        // Start initial delay (during which incoming questions are queued)
+        leaderboardInitialDelayActiveRef.current = true;
+        leaderboardInitialDelayRef.current = setTimeout(() => {
+          leaderboardInitialDelayActiveRef.current = false;
+
+          // Show leaderboard after the small delay
           setScreen("leaderboard");
           setCorrectId(null);
           setAnswerFeedback(null);
-        }, delayTime);
+
+          // Activate hold period so leaderboard remains visible
+          leaderboardHoldRef.current = true;
+          leaderboardTimeoutRef.current = setTimeout(() => {
+            leaderboardHoldRef.current = false;
+            leaderboardTimeoutRef.current = null;
+            // If a question arrived while leaderboard was held, process it now
+            if (pendingQuestionRef.current) {
+              const queuedMsg = pendingQuestionRef.current;
+              pendingQuestionRef.current = null;
+              // process queued question just like normal
+              setQuestion(queuedMsg.payload.question);
+              setScreen("quiz");
+              setCorrectId(null);
+              setAnswerFeedback(null);
+              setCurrentQuestionNumber(prev => {
+                const newNumber = prev + 1;
+                if (newNumber === 10) {
+                  setShowX2Animation(true);
+                  setTimeout(() => setShowX2Animation(false), 1500);
+                }
+                return newNumber;
+              });
+            }
+          }, holdTime);
+        }, initialDelay);
         break;
 
       case "game_over":
@@ -191,6 +249,21 @@ export default function Gameplay() {
         console.log("Tin nhắn không xác định:", msg);
     }
   };
+
+  // Cleanup leaderboard timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (leaderboardTimeoutRef.current) {
+        clearTimeout(leaderboardTimeoutRef.current);
+        leaderboardTimeoutRef.current = null;
+      }
+      if (leaderboardInitialDelayRef.current) {
+        clearTimeout(leaderboardInitialDelayRef.current);
+        leaderboardInitialDelayRef.current = null;
+        leaderboardInitialDelayActiveRef.current = false;
+      }
+    };
+  }, []);
 
   // Error handler for WebSocket
   const handleWebSocketError = (error) => {
@@ -463,7 +536,7 @@ export default function Gameplay() {
     }
   };
   const backToHome = () => {
-    navigate("/");
+    navigate("//");
   };
 
   return (
