@@ -952,3 +952,208 @@
   .leaderboard-list::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(45deg, #e67e22, #d35400);
   }
+
+
+.score-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.current-score {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.score-animation-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.score-increase-animation {
+  color: #4CAF50;
+  font-weight: bold;
+  font-size: 16px;
+  animation: scoreIncreaseFloat 2s ease-out forwards;
+  position: relative;
+}
+
+.score-counter-animation {
+  color: #888;
+  font-size: 14px;
+  text-decoration: line-through;
+  animation: fadeOut 2s ease-out forwards;
+}
+
+@keyframes scoreIncreaseFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0px) scale(1.2);
+    color: #4CAF50;
+    text-shadow: 0 0 10px #4CAF50;
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1);
+    color: #4CAF50;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.8);
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.current-user .score-increase-animation {
+  color: #FFD700;
+  text-shadow: 0 0 15px #FFD700;
+}
+
+.first-place .score-increase-animation {
+  color: #FFD700;
+  text-shadow: 0 0 15px #FFD700;
+}
+
+.second-place .score-increase-animation {
+  color: #C0C0C0;
+  text-shadow: 0 0 10px #C0C0C0;
+}
+
+.third-place .score-increase-animation {
+  color: #CD7F32;
+  text-shadow: 0 0 10px #CD7F32;
+}
+
+/* Enhanced animation for score increases */
+.score-increase-animation::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 30px;
+  height: 30px;
+  background: radial-gradient(circle, rgba(76, 175, 80, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: scoreGlow 2s ease-out forwards;
+  z-index: -1;
+}
+
+@keyframes scoreGlow {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+/* Home button (top-left) — glassy, vibrant, accessible */
+.homeBtn {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 60;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.02);
+  color: #fff;
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.homeBtn svg {
+  font-size: 20px;
+  color: #fff;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.45));
+}
+
+/* Label text */
+.homeBtn-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  letter-spacing: 0.2px;
+  pointer-events: none;
+}
+
+/* Hover / focus styles */
+.homeBtn:hover,
+.homeBtn:focus {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 36px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.03);
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+  outline: none;
+}
+
+.homeBtn:active {
+  transform: translateY(-1px) scale(0.995);
+}
+
+/* Keyboard focus visible */
+.homeBtn:focus-visible {
+  box-shadow: 0 0 0 4px rgba(145, 217, 191, 0.18), 0 12px 30px rgba(0,0,0,0.5);
+}
+
+/* Small subtle pulse for attention (optional) */
+@keyframes homePulse {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+.homeBtn.pulse {
+  animation: homePulse 2200ms ease-in-out infinite;
+}
+
+/* Responsive: on very small screens use icon-only circular button */
+@media (max-width: 520px) {
+  .homeBtn {
+    padding: 10px;
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
+    justify-content: center;
+    gap: 0;
+  }
+  .homeBtn-label { display: none; }
+}
+
+/* ensure high-contrast fallback */
+@media (prefers-contrast: more) {
+  .homeBtn {
+    background: #111;
+    border-color: #fff;
+  }
+  .homeBtn-label { color: #fff; }
+}

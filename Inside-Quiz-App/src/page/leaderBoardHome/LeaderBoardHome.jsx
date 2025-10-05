@@ -50,8 +50,14 @@ export default function LeaderBoardHome() {
 
     return (
         <div className="leaderboard-page">
-            <img onClick={() => navigate("/")} className="homeBtn" src={`${import.meta.env.BASE_URL}image/homeBtn.png`} alt="Description" />
-            <HomeIcon className="homeBtn" variant="contained" color="#991111ff" onClick={() => navigate("/")}>Về trang chủ</HomeIcon>
+            <button
+                type="button"
+                className="homeBtn"
+                aria-label="Về trang chủ"
+                onClick={() => navigate("/")}
+            >
+                <HomeIcon className="homeBtn-icon" />
+            </button>
             <div className="leaderboard-page-header">
                 <h1>Leaderboard</h1>
             </div>

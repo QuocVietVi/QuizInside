@@ -32,28 +32,28 @@ export default function Gameplay() {
   let userToken = location.state?.token;
 
   console.log('=== Gameplay Token Debug ===');
-  console.log('Token from navigation state:', userToken);
+  //console.log('Token from navigation state:', userToken);
 
   // If no token from navigation state, try other sources
   if (!userToken) {
-    console.log('No token from navigation, trying storage...');
+    //console.log('No token from navigation, trying storage...');
 
     userToken = localStorage.getItem('userToken') ||
       sessionStorage.getItem('userToken');
 
-    console.log('Token from storage:', userToken);
+    //console.log('Token from storage:', userToken);
 
     if (!userToken) {
       // Try cookies
       const cookies = document.cookie.split('; ');
-      console.log('Checking cookies:', cookies);
+      //console.log('Checking cookies:', cookies);
 
       const possibleCookieNames = ['token', 'access_token', 'auth_token', 'jwt'];
       for (const cookieName of possibleCookieNames) {
         const cookieToken = cookies.find(row => row.startsWith(`${cookieName}=`))?.split('=')[1];
         if (cookieToken) {
           userToken = cookieToken;
-          console.log(`Found token in cookie '${cookieName}':`, cookieToken);
+          //console.log(`Found token in cookie '${cookieName}':`, cookieToken);
           break;
         }
       }
@@ -66,14 +66,16 @@ export default function Gameplay() {
     console.warn('No OAuth token found anywhere, using fallback token:', userToken);
   }
 
-  console.log('Final token for gameplay:', userToken);
-  console.log('===========================');
+  // console.log('Final token for gameplay:', userToken);
+  // console.log('===========================');
 
   const [roomID, setRoomID] = useState(joinedRoomID || null);
   const [players, setPlayers] = useState([]);
   const [screen, setScreen] = useState("room");
   const [question, setQuestion] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
+  const [previousLeaderboard, setPreviousLeaderboard] = useState([]);
+  const [scoreAnimations, setScoreAnimations] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [userLoginStatus, setUserLoginStatus] = useState(null);
@@ -99,6 +101,14 @@ export default function Gameplay() {
   // New refs for the initial delay before opening leaderboard
   const leaderboardInitialDelayRef = useRef(null);
   const leaderboardInitialDelayActiveRef = useRef(false);
+
+  // Add a ref to hold the latest leaderboard to avoid stale closures inside handlers
+  const leaderboardRef = useRef([]);
+
+  // Keep the ref in sync whenever leaderboard state changes
+  useEffect(() => {
+    leaderboardRef.current = leaderboard;
+  }, [leaderboard]);
 
   // --- WebSocket callback với error handling
   const handleMessage = (msg) => {
@@ -174,9 +184,24 @@ export default function Gameplay() {
         break;
 
       case "results":
-        // Ensure we show top 10 players in leaderboard
-        const topPlayers = msg.payload.leaderboard?.slice(0, 10) || [];
-        setLeaderboard(calculateScores(topPlayers));
+        console.log("Results payload:", msg.payload);
+        
+        // Use the up-to-date leaderboard from the ref, not a possibly stale state closure
+        const previous = [...leaderboardRef.current];
+
+        const newLeaderboard = calculateScores(msg.payload.leaderboard || []);
+        
+        console.log("Current leaderboard for comparison:", previous);
+        console.log("New leaderboard:", newLeaderboard);
+        const animations = calculateScoreAnimations(previous, newLeaderboard);
+        
+        setPreviousLeaderboard(previous);
+
+        // Update state and the ref so subsequent messages see the new leaderboard
+        setLeaderboard(newLeaderboard);
+        leaderboardRef.current = newLeaderboard;
+
+        setScoreAnimations(animations);
         setCorrectId(msg.payload.correct_id);
 
         // Keep older behaviour: wait a short initial delay, then open leaderboard,
@@ -209,6 +234,8 @@ export default function Gameplay() {
           leaderboardTimeoutRef.current = setTimeout(() => {
             leaderboardHoldRef.current = false;
             leaderboardTimeoutRef.current = null;
+            // Clear score animations when leaderboard closes
+            setScoreAnimations([]);
             // If a question arrived while leaderboard was held, process it now
             if (pendingQuestionRef.current) {
               const queuedMsg = pendingQuestionRef.current;
@@ -232,9 +259,21 @@ export default function Gameplay() {
         break;
 
       case "game_over":
-        // Ensure we show top 10 players in final leaderboard
-        const finalTopPlayers = msg.payload.leaderboard?.slice(0, 10) || [];
-        setLeaderboard(calculateScores(finalTopPlayers));
+        console.log("Game over payload:", msg.payload);
+        
+        // Calculate final leaderboard
+        const finalLeaderboard = calculateScores(msg.payload.leaderboard || []);
+        
+        console.log("Current leaderboard for final comparison:", leaderboardRef.current);
+        console.log("Final leaderboard:", finalLeaderboard);
+        
+        // Calculate final animations using the latest leaderboard from the ref
+        const finalAnimations = calculateScoreAnimations(leaderboardRef.current, finalLeaderboard);
+        
+        setPreviousLeaderboard([...leaderboardRef.current]);
+        setLeaderboard(finalLeaderboard);
+        leaderboardRef.current = finalLeaderboard;
+        setScoreAnimations(finalAnimations);
         setCorrectId(msg.payload.correct_id);
         setScreen("leaderboard");
         break;
@@ -368,6 +407,9 @@ export default function Gameplay() {
 
     // Reset question number when starting new game
     setCurrentQuestionNumber(0);
+    // Reset score tracking for new game
+    setPreviousLeaderboard([]);
+    setScoreAnimations([]);
 
     try {
       setConnectionStatus("connecting");
@@ -712,20 +754,76 @@ export default function Gameplay() {
       )}
 
       {connectionStatus === "connected" && screen === "leaderboard" && (
-        <LeaderBoardGamePlay leaderboard={leaderboard} />
+        <LeaderBoardGamePlay 
+          leaderboard={leaderboard} 
+          scoreAnimations={scoreAnimations}
+          currentUserId={currentUserId}
+        />
       )}
     </div>
   );
 }
 
-function calculateScore(timeLeft) {
-  const base = 1000;
-  const multiplier = 50;
-  return base + timeLeft * multiplier;
+// Function to calculate score animations
+function calculateScoreAnimations(previousLeaderboard, currentLeaderboard) {
+  const animations = [];
+  
+  console.log("=== Animation Calculation ===");
+  console.log("Previous leaderboard length:", previousLeaderboard.length);
+  console.log("Previous leaderboard:", JSON.stringify(previousLeaderboard, null, 2));
+  console.log("Current leaderboard length:", currentLeaderboard.length);
+  console.log("Current leaderboard:", JSON.stringify(currentLeaderboard, null, 2));
+  
+  // Only calculate animations if we have a previous leaderboard to compare with
+  if (previousLeaderboard.length === 0) {
+    console.log("No previous leaderboard, skipping score animations");
+    return animations;
+  }
+  
+  currentLeaderboard.forEach((currentPlayer, index) => {
+    console.log(`Processing player ${index}:`, currentPlayer);
+    const previousPlayer = previousLeaderboard.find(p => p.id === currentPlayer.id);
+    console.log(`Found previous player:`, previousPlayer);
+    
+    if (previousPlayer) {
+      const scoreIncrease = currentPlayer.score - previousPlayer.score;
+      console.log(`Score change: ${previousPlayer.score} -> ${currentPlayer.score} = +${scoreIncrease}`);
+      
+      if (scoreIncrease > 0) {
+        animations.push({
+          playerId: currentPlayer.id,
+          scoreIncrease: scoreIncrease,
+          previousScore: previousPlayer.score,
+          currentScore: currentPlayer.score
+        });
+        console.log(`✓ Animation added for player ${currentPlayer.id}: +${scoreIncrease}`);
+      }
+    } else {
+      // New player appeared in leaderboard - show their current score as increase
+      animations.push({
+        playerId: currentPlayer.id,
+        scoreIncrease: currentPlayer.score,
+        previousScore: 0,
+        currentScore: currentPlayer.score
+      });
+      console.log(`✓ New player animation added for ${currentPlayer.id}: +${currentPlayer.score}`);
+    }
+  });
+  
+  console.log("Final animations array:", animations);
+  console.log("=== End Animation Calculation ===");
+  return animations;
 }
 
 function calculateScores(players) {
+  console.log("Raw players data:", players);
+  if (!Array.isArray(players)) {
+    console.warn("Players is not an array:", players);
+    return [];
+  }
   // Sort and return top 10 players
-  return [...players].sort((a, b) => b.score - a.score).slice(0, 10);
+  const sorted = [...players].sort((a, b) => b.score - a.score).slice(0, 10);
+  console.log("Sorted players:", sorted);
+  return sorted;
 }
 
