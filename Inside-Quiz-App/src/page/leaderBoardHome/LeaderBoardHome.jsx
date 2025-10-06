@@ -5,6 +5,7 @@ import { loadGlobalLeaderboard, getCurrentUser } from "../../services/gameServic
 import Button from "@mui/material/Button";
 import { useNavigate } from "react-router-dom";
 import HomeIcon from '@mui/icons-material/Home';
+
 export default function LeaderBoardHome() {
     const [board, setBoard] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -47,6 +48,7 @@ export default function LeaderBoardHome() {
         fetchAll();
         return () => { mounted = false; };
     }, []);
+    const isMobile = window.innerWidth <= 768;
 
     return (
         <div className="leaderboard-page">

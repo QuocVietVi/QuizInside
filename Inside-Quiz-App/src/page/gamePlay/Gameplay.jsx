@@ -19,6 +19,7 @@ import {
   getConnectionStatus,
   checkSession,
   initiateLogin,
+  loadPlayerStats,
 } from "../../services/gameService";
 import { setLoading } from "../../services/loadingService";
 
@@ -79,6 +80,7 @@ export default function Gameplay() {
   const [currentUserId, setCurrentUserId] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState("connecting");
   const [userLoginStatus, setUserLoginStatus] = useState(null);
+  const [hostId, setHostId] = useState(null); // Add state for host ID
 
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -123,8 +125,9 @@ export default function Gameplay() {
             ...p,
           })) || []
         );
-        if (msg.payload.current_user_id) {
-          setCurrentUserId(msg.payload.current_user_id);
+        // Remove current_user_id handling from WebSocket - we get it from API
+        if (msg.payload.host_id) {
+          setHostId(msg.payload.host_id);
         }
         break;
 
@@ -135,8 +138,9 @@ export default function Gameplay() {
             ...p,
           })) || []
         );
-        if (msg.payload.current_user_id) {
-          setCurrentUserId(msg.payload.current_user_id);
+        // Remove current_user_id handling from WebSocket - we get it from API
+        if (msg.payload.host_id) {
+          setHostId(msg.payload.host_id);
         }
         break;
 
@@ -147,8 +151,9 @@ export default function Gameplay() {
             // Use modulo to cycle through available avatars for unlimited players
           })) || []
         );
-        if (msg.payload.current_user_id) {
-          setCurrentUserId(msg.payload.current_user_id);
+        // Remove current_user_id handling from WebSocket - we get it from API
+        if (msg.payload.host_id) {
+          setHostId(msg.payload.host_id); // Store host ID from payload
         }
         console.log(`Updated players count: ${msg.payload.players?.length || 0}`);
         break;
@@ -204,10 +209,12 @@ export default function Gameplay() {
         setScoreAnimations(animations);
         setCorrectId(msg.payload.correct_id);
 
-        // Keep older behaviour: wait a short initial delay, then open leaderboard,
-        // then keep leaderboard visible for a longer hold period.
-        const initialDelay = currentQuestionNumber === 10 ? 3000 : 1800;// 1 second before showing leaderboard
-        const holdTime = currentQuestionNumber === 10 ? 10000 : 4000; // how long leaderboard stays visible
+        // Enhanced timing for final question (question 10)
+        const isFinalQuestion = currentQuestionNumber === 10;
+        const initialDelay = isFinalQuestion ? 8000 : 1800; // Longer delay for final question to see correct answer
+        const holdTime = isFinalQuestion ? 15000 : 4000; // Longer hold time for final leaderboard
+
+        console.log(`Question ${currentQuestionNumber} - Using delays: initial=${initialDelay}ms, hold=${holdTime}ms`);
 
         // Clear any existing timeouts
         if (leaderboardTimeoutRef.current) {
@@ -224,7 +231,7 @@ export default function Gameplay() {
         leaderboardInitialDelayRef.current = setTimeout(() => {
           leaderboardInitialDelayActiveRef.current = false;
 
-          // Show leaderboard after the small delay
+          // Show leaderboard after the delay
           setScreen("leaderboard");
           setCorrectId(null);
           setAnswerFeedback(null);
@@ -275,7 +282,11 @@ export default function Gameplay() {
         leaderboardRef.current = finalLeaderboard;
         setScoreAnimations(finalAnimations);
         setCorrectId(msg.payload.correct_id);
-        setScreen("leaderboard");
+        
+        // Add delay before showing final leaderboard to see the correct answer
+        setTimeout(() => {
+          setScreen("leaderboard");
+        }, 3000); // 3 second delay to see final answer
         break;
 
       case "error":
@@ -321,12 +332,46 @@ export default function Gameplay() {
     if (error.message.includes("không tồn tại") || error.message.includes("not found")) {
       alert("Phòng không tồn tại. Vui lòng kiểm tra lại mã PIN.");
       setTimeout(() => {
-        window.location.href = "/";
+        navigate("/");
+
+      }, 2000);
+    }
+
+    if (error.message.includes("đã bắt đầu") || error.message.includes("already started")) {
+      alert("Phòng đã bắt đầu game. Không thể tham gia vào lúc này.");
+      setTimeout(() => {
+        navigate("/");
       }, 2000);
       return;
     }
 
-    if (retryCountRef.current < maxRetries) {
+    if (error.message.includes("đã kết thúc") || error.message.includes("finished")) {
+      alert("Game đã kết thúc. Vui lòng tham gia phòng khác.");
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
+      return;
+    }
+
+    if (error.message.includes("đã đầy") || error.message.includes("full")) {
+      alert("Phòng đã đầy. Vui lòng thử phòng khác.");
+      setTimeout(() => {
+        navigate("/");
+
+      }, 2000);
+      return;
+    }
+
+    // Handle message too big error specifically
+    if (error.message.includes("quá nhiều người chơi") || error.message.includes("Message too big")) {
+      alert("Phòng có quá nhiều người chơi và không thể tải được. Vui lòng thử:\n\n1. Tạo phòng mới\n2. Tham gia phòng khác có ít người hơn\n\nBạn sẽ được chuyển về trang chủ.");
+      setTimeout(() => {
+        navigate("/");
+      }, 3000);
+      return;
+    }
+
+    if (retryCountRef.current < maxRetries && !error.message.includes("quá nhiều người chơi")) {
       retryCountRef.current += 1;
       console.log(`Retrying connection... Attempt ${retryCountRef.current}/${maxRetries}`);
 
@@ -337,7 +382,15 @@ export default function Gameplay() {
         }
       }, 2000 * retryCountRef.current);
     } else {
-      console.error("Max retries exceeded");
+      console.error("Max retries exceeded or non-retryable error");
+      
+      // Show different message based on error type
+      if (error.message.includes("quá nhiều người chơi")) {
+        // Already handled above
+        return;
+      } else {
+        alert("Không thể kết nối sau nhiều lần thử. Vui lòng kiểm tra kết nối mạng và thử lại.");
+      }
     }
   };
 
@@ -348,6 +401,11 @@ export default function Gameplay() {
       console.log("Already initialized, skipping...");
       return;
     }
+
+    console.log("=== Starting Room Initialization ===");
+    console.log("joinedRoomID:", joinedRoomID);
+    console.log("isHost:", isHost);
+    console.log("category:", category);
 
     // Check login status first
     const loginResult = await checkSession();
@@ -368,6 +426,25 @@ export default function Gameplay() {
       return;
     }
 
+    // Fetch current user ID from player stats API
+    try {
+      const statsResult = await loadPlayerStats();
+      console.log('Player stats result:', statsResult);
+      if (statsResult.success && statsResult.stats) {
+        const userId = statsResult.stats.user_id || statsResult.stats.id || statsResult.stats.player_id;
+        if (userId) {
+          setCurrentUserId(userId);
+          console.log('Set current user ID from stats:', userId);
+        } else {
+          console.warn('No user ID found in stats response:', statsResult.stats);
+        }
+      } else {
+        console.warn('Failed to load player stats:', statsResult.error);
+      }
+    } catch (error) {
+      console.error('Error loading player stats:', error);
+    }
+
     // Try to get fresh token from login result if current token is fallback
     if (userToken.startsWith('fallback_') && loginResult.success) {
       const freshToken = loginResult.token ||
@@ -375,7 +452,7 @@ export default function Gameplay() {
         loginResult.access_token;
 
       if (freshToken) {
-        console.log('Replacing fallback token with fresh token:', freshToken);
+        console.log('Replacing fallback token with fresh token');
         userToken = freshToken;
         localStorage.setItem('userToken', freshToken);
         sessionStorage.setItem('userToken', freshToken);
@@ -383,7 +460,12 @@ export default function Gameplay() {
     }
 
     // Enhanced token validation
-    console.log('Using token for room operations:', userToken);
+    console.log('Final token validation:');
+    console.log('- Token exists:', !!userToken);
+    console.log('- Token type:', typeof userToken);
+    console.log('- Token length:', userToken?.length);
+    console.log('- Is fallback:', userToken?.startsWith('fallback_'));
+    
     if (!userToken || userToken === 'undefined' || userToken === 'null') {
       console.error("No valid token available for room operations");
       setConnectionStatus("error");
@@ -400,7 +482,6 @@ export default function Gameplay() {
 
     if (userToken.startsWith('fallback_')) {
       console.warn("Still using fallback token - this may cause authentication issues");
-      // Don't block the request, let the server handle the invalid token
     }
 
     hasInitialized.current = true;
@@ -413,25 +494,34 @@ export default function Gameplay() {
 
     try {
       setConnectionStatus("connecting");
+      console.log("Setting connection status to connecting...");
 
       if (joinedRoomID) {
-        console.log("Joining room:", joinedRoomID, "with token:", userToken);
+        console.log("=== JOINING EXISTING ROOM ===");
+        console.log("Room ID:", joinedRoomID);
         const res = await joinRoom(joinedRoomID, userToken, handleMessage, handleWebSocketError);
         console.log("Join room response:", res);
       } else {
-        console.log("Creating new room with category:", category, "with token:", userToken);
+        console.log("=== CREATING NEW ROOM ===");
+        console.log("Category:", category);
         const res = await createRoom(userToken, category, handleMessage, handleWebSocketError);
         console.log("Create room response:", res);
         if (res.room_id) {
           setRoomID(res.room_id);
+          console.log("Room ID set to:", res.room_id);
         }
       }
 
       // Reset retry count on successful connection
       retryCountRef.current = 0;
+      console.log("=== Room Initialization Complete ===");
 
     } catch (err) {
-      console.error("Lỗi tạo/join room:", err);
+      console.error("=== Room Initialization Failed ===");
+      console.error("Error details:", err);
+      console.error("Error message:", err.message);
+      console.error("Error stack:", err.stack);
+      
       hasInitialized.current = false; // Allow retry
 
       if (!isComponentMounted.current) return;
@@ -448,17 +538,46 @@ export default function Gameplay() {
             console.error('Login initiation failed:', error);
           }
         }, 1000);
+      } else if (err.message.includes("Token không hợp lệ") || err.message.includes("Xác thực thất bại")) {
+        alert(err.message + "\n\nBạn sẽ được chuyển đến trang đăng nhập.");
+        setTimeout(async () => {
+          try {
+            await initiateLogin();
+          } catch (error) {
+            console.error('Login initiation failed:', error);
+          }
+        }, 1000);
       } else if (err.message.includes("đã tham gia phòng") || err.message.includes("already in room")) {
         alert(err.message);
       } else if (err.message.includes("không tồn tại") || err.message.includes("not found")) {
         alert("Phòng không tồn tại hoặc đã đóng. Vui lòng kiểm tra lại mã PIN.");
         setTimeout(() => {
-          window.location.href = "/";
+          navigate("/");
+        }, 2000);
+      } else if (err.message.includes("đã bắt đầu") || err.message.includes("already started")) {
+        alert("Phòng đã bắt đầu game. Không thể tham gia vào lúc này.");
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      } else if (err.message.includes("đã kết thúc") || err.message.includes("finished")) {
+        alert("Game đã kết thúc. Vui lòng tham gia phòng khác.");
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      } else if (err.message.includes("đã đầy") || err.message.includes("full")) {
+        alert("Phòng đã đầy. Vui lòng thử phòng khác.");
+        setTimeout(() => {
+          navigate("/");
         }, 2000);
       } else if (err.message.includes("WebSocket") || err.message.includes("Connection") || err.message.includes("timeout")) {
+        console.log("WebSocket/Connection error, delegating to error handler");
         handleWebSocketError(err);
+      } else if (err.message.includes("Server đang bảo trì") || err.message.includes("503")) {
+        alert("Server đang bảo trì. Vui lòng thử lại sau ít phút.");
+      } else if (err.message.includes("Server quá tải") || err.message.includes("429")) {
+        alert("Server đang quá tải. Vui lòng đợi một chút rồi thử lại.");
       } else {
-        alert("Không thể kết nối phòng: " + err.message);
+        alert("Không thể kết nối phòng: " + err.message + "\n\nVui lòng thử lại hoặc tải lại trang.");
       }
     }
   };
@@ -581,6 +700,7 @@ export default function Gameplay() {
     navigate("//");
   };
 
+  
   return (
     <div className="gameplay">
       <header className="header">
@@ -681,7 +801,7 @@ export default function Gameplay() {
           <p>Không thể kết nối tới server</p>
           <p style={{ fontSize: "14px", color: "#ccc", marginBottom: "20px" }}>
             {retryCountRef.current >= maxRetries
-              ? "Đã thử kết nối nhiều lần nhưng không thành công. Server có thể đang bảo trì."
+              ? "Đã thử kết nối nhiều lần nhưng không thành công. Server có thể đang bảo trì hoặc phòng có quá nhiều người chơi."
               : "Có lỗi xảy ra khi kết nối. Vui lòng thử lại."
             }
           </p>
@@ -695,7 +815,7 @@ export default function Gameplay() {
             </Button>
             <Button
               variant="outlined"
-              onClick={navigate("/")}
+              onClick={() => navigate("/")}
               sx={{ color: "white", borderColor: "white" }}
             >
               Về trang chủ
@@ -712,6 +832,7 @@ export default function Gameplay() {
           category={category}
           isHost={isHost}
           currentUserId={currentUserId}
+          hostId={hostId} // Pass hostId to RoomCreate
         />
       )}
 
@@ -758,6 +879,7 @@ export default function Gameplay() {
           leaderboard={leaderboard} 
           scoreAnimations={scoreAnimations}
           currentUserId={currentUserId}
+          isFinalLeaderboard={currentQuestionNumber === 10}
         />
       )}
     </div>
@@ -767,28 +889,28 @@ export default function Gameplay() {
 // Function to calculate score animations
 function calculateScoreAnimations(previousLeaderboard, currentLeaderboard) {
   const animations = [];
-  
+
   console.log("=== Animation Calculation ===");
   console.log("Previous leaderboard length:", previousLeaderboard.length);
   console.log("Previous leaderboard:", JSON.stringify(previousLeaderboard, null, 2));
   console.log("Current leaderboard length:", currentLeaderboard.length);
   console.log("Current leaderboard:", JSON.stringify(currentLeaderboard, null, 2));
-  
+
   // Only calculate animations if we have a previous leaderboard to compare with
   if (previousLeaderboard.length === 0) {
     console.log("No previous leaderboard, skipping score animations");
     return animations;
   }
-  
+
   currentLeaderboard.forEach((currentPlayer, index) => {
     console.log(`Processing player ${index}:`, currentPlayer);
     const previousPlayer = previousLeaderboard.find(p => p.id === currentPlayer.id);
     console.log(`Found previous player:`, previousPlayer);
-    
+
     if (previousPlayer) {
       const scoreIncrease = currentPlayer.score - previousPlayer.score;
       console.log(`Score change: ${previousPlayer.score} -> ${currentPlayer.score} = +${scoreIncrease}`);
-      
+
       if (scoreIncrease > 0) {
         animations.push({
           playerId: currentPlayer.id,
@@ -809,7 +931,7 @@ function calculateScoreAnimations(previousLeaderboard, currentLeaderboard) {
       console.log(`✓ New player animation added for ${currentPlayer.id}: +${currentPlayer.score}`);
     }
   });
-  
+
   console.log("Final animations array:", animations);
   console.log("=== End Animation Calculation ===");
   return animations;
@@ -826,4 +948,3 @@ function calculateScores(players) {
   console.log("Sorted players:", sorted);
   return sorted;
 }
-

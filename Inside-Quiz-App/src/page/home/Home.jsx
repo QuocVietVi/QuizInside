@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./Home.css";
 import Button from "@mui/material/Button";
 import HomeContent from "../homeContent/HomeContent";
-import { checkSession, initiateLogin, handleLoginCallback, logout, loadCategories } from "../../services/gameService";
+import { checkSession, initiateLogin, handleLoginCallback, logout, loadCategories, validateRoom, joinRoomAPI } from "../../services/gameService";
 import { useNavigate } from "react-router-dom";
 import LoadingOverlay from "../../component/loading/LoadingOverlay";
 import { setLoading } from "../../services/loadingService";
@@ -15,9 +15,10 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loginError, setLoginError] = useState(null);
-  const [userToken, setUserToken] = useState(null); // Store OAuth token
-  
-  // Remove the generated token line
+  const [userToken, setUserToken] = useState(null);
+  const [autoJoinTimer, setAutoJoinTimer] = useState(null);
+  const [isAutoJoining, setIsAutoJoining] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export default function Home() {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const loginSuccess = urlParams.get('login');
-    
+
     if (token) {
       // Step 3: Handle login callback with token
       handleOAuthCallback(token);
@@ -38,22 +39,28 @@ export default function Home() {
     } else {
       checkLoginStatus();
     }
-    
+
     // Set up periodic session validation
     const sessionInterval = setInterval(() => {
       if (isLoggedIn && !isLoading) {
         checkLoginStatus();
       }
     }, 5 * 60 * 1000); // Check every 5 minutes
-    
+
     return () => clearInterval(sessionInterval);
   }, []);
 
   // Ensure global loading overlay is cleared when Home mounts
   // and also when user navigates via browser back button (popstate).
   useEffect(() => {
-    setLoading(false);
-    const handlePopState = () => setLoading(false);
+    // Nếu đang trong tiến trình đăng nhập (redirect OAuth), đừng tắt overlay.
+    const isAuthInProgress = sessionStorage.getItem('authInProgress') === '1';
+    if (!isAuthInProgress) setLoading(false);
+
+    const handlePopState = () => {
+      const authInProgressNow = sessionStorage.getItem('authInProgress') === '1';
+      if (!authInProgressNow) setLoading(false);
+    };
     window.addEventListener("popstate", handlePopState);
     return () => {
       window.removeEventListener("popstate", handlePopState);
@@ -93,10 +100,10 @@ export default function Home() {
     if (token) {
       // If you're using axios, you can set default headers like this:
       // axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
+
       // For fetch requests, store token globally
       window.authToken = token;
-      
+
       console.log('Token set in headers:', token);
     }
   };
@@ -109,10 +116,10 @@ export default function Home() {
     try {
       console.log('Processing OAuth callback with token:', token);
       console.log('This is OAuth token, will exchange for accessToken...');
-      
+
       const result = await handleLoginCallback(token);
       console.log('handleLoginCallback result:', result);
-      
+
       if (result.success) {
         // Store preliminary data from callback
         const callbackUser = result.data;
@@ -155,10 +162,10 @@ export default function Home() {
         }
 
         setLoginError(null);
-        
+
         // Clean up URL parameters
         window.history.replaceState({}, document.title, window.location.pathname);
-        
+
         // Show success message briefly
         const successMsg = document.createElement('div');
         successMsg.style.cssText = `
@@ -169,7 +176,7 @@ export default function Home() {
         //successMsg.textContent = '✓ Đăng nhập thành công!';
         document.body.appendChild(successMsg);
         setTimeout(() => successMsg.remove(), 3000);
-        
+
       } else {
         throw new Error(result.error);
       }
@@ -178,13 +185,15 @@ export default function Home() {
       setLoginError(error.message);
       setCurrentUser(null);
       setIsLoggedIn(false);
-      
+
       // Clean up URL parameters even on error
       window.history.replaceState({}, document.title, window.location.pathname);
-      
+
       // Show error message
       alert('Đăng nhập thất bại: ' + error.message);
     } finally {
+      // Hoàn tất xử lý callback => xoá cờ auth để overlay có thể được ẩn
+      sessionStorage.removeItem('authInProgress');
       setLoading(false); // đảm bảo hide overlay
       setIsLoading(false);
     }
@@ -193,25 +202,25 @@ export default function Home() {
   const checkLoginStatus = async () => {
     setIsLoading(true);
     setLoginError(null);
-    
+
     try {
       const result = await checkSession();
       console.log('checkSession result:', result);
-      
+
       if (result.success) {
         setCurrentUser(result.user);
         setIsLoggedIn(true);
         setLoginError(null);
-        
+
         // The result.token should be the accessToken
         let accessToken = result.token;
-        
+
         // Fallback to storage if no token in result
         if (!accessToken) {
           accessToken = localStorage.getItem('userToken') || sessionStorage.getItem('userToken');
           console.log('Using accessToken from storage:', accessToken);
         }
-        
+
         if (accessToken) {
           setUserToken(accessToken);
           localStorage.setItem('userToken', accessToken);
@@ -219,7 +228,7 @@ export default function Home() {
         } else {
           console.warn('No accessToken found anywhere during session check');
         }
-        
+
         console.log('Session check successful:', result.user);
       } else {
         setCurrentUser(null);
@@ -237,6 +246,8 @@ export default function Home() {
       setUserToken(null);
       setLoginError(error.message);
     } finally {
+      // Sau khi kiểm tra session xong, nếu có cờ auth thì xoá (trường hợp quay về trang mà callback không gọi)
+      sessionStorage.removeItem('authInProgress');
       setIsLoading(false);
     }
   };
@@ -245,19 +256,21 @@ export default function Home() {
     if (!isLoggedIn) {
       setIsLoading(true);
       setLoginError(null);
-      
+
       try {
+        // Đánh dấu login đang tiến hành để overlay không bị ẩn khi redirect
+        sessionStorage.setItem('authInProgress', '1');
         setLoading(true); // show overlay while initiating login
         await initiateLogin();
         // initiateLogin will redirect, so we won't reach here normally
         setLoading(false);
       } catch (error) {
-        console.error('Login error:', error);
+        // Nếu khởi tạo login thất bại, xoá cờ
+        sessionStorage.removeItem('authInProgress');
+        setLoading(false);
         setLoginError(error.message);
         setIsLoading(false);
-        setLoading(false);
-        
-        // Show detailed error message
+        // ...existing error handling...
         let errorMsg = 'Không thể đăng nhập';
         if (error.message.includes('network') || error.message.includes('fetch')) {
           errorMsg = 'Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.';
@@ -266,7 +279,7 @@ export default function Home() {
         } else {
           errorMsg = error.message;
         }
-        
+
         alert(errorMsg);
       }
     }
@@ -276,16 +289,18 @@ export default function Home() {
     setIsLoading(true);
     try {
       await logout();
+      // đảm bảo dọn cờ auth nếu có
+      sessionStorage.removeItem('authInProgress');
       setCurrentUser(null);
       setIsLoggedIn(false);
       setLoginError(null);
       setUserToken(null);
-      
+
       // Clear all token storage
       localStorage.removeItem('userToken');
       sessionStorage.removeItem('userToken');
       window.authToken = null;
-      
+
       // Show success message
       const successMsg = document.createElement('div');
       successMsg.style.cssText = `
@@ -296,7 +311,7 @@ export default function Home() {
       successMsg.textContent = '✓ Đăng xuất thành công!';
       document.body.appendChild(successMsg);
       setTimeout(() => successMsg.remove(), 2000);
-      
+
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -312,57 +327,154 @@ export default function Home() {
       value = value.substring(0, 3) + " " + value.substring(3);
     }
     setPin(value);
+
+    // Clear existing timer
+    if (autoJoinTimer) {
+      clearTimeout(autoJoinTimer);
+      setAutoJoinTimer(null);
+    }
+
+    // If PIN is complete (6 digits), set auto-join timer
+    const cleanPin = value.replace(/\s/g, "");
+    if (cleanPin.length === 6) {
+      const timer = setTimeout(() => {
+        handleAutoJoinGame(cleanPin);
+      }, 1000);
+      setAutoJoinTimer(timer);
+    }
   };
 
-  const handleJoinGame = async () => {
+  const handleAutoJoinGame = async (roomID) => {
+    if (isAutoJoining) return; // Prevent duplicate calls
+
+    setIsAutoJoining(true);
+
+    try {
+      await handleJoinGame(roomID, true); // true indicates auto-join
+    } catch (error) {
+      console.error("Auto-join failed:", error);
+      // Clear PIN on failure
+      setPin("");
+    } finally {
+      setIsAutoJoining(false);
+    }
+  };
+
+  const handleJoinGame = async (customRoomID = null, isAutoJoin = false) => {
     // Check login first
     if (!isLoggedIn) {
-      alert("Vui lòng đăng nhập trước khi tham gia phòng");
-      handleLogin();
+      if (!isAutoJoin) {
+        alert("Vui lòng đăng nhập trước khi tham gia phòng");
+        handleLogin();
+      }
+      // Clear PIN when join cannot proceed
+      setPin("");
       return;
     }
 
     if (!userToken) {
-      alert("Không tìm thấy token xác thực. Vui lòng đăng nhập lại.");
-      handleLogin();
+      if (!isAutoJoin) {
+        alert("Không tìm thấy token xác thực. Vui lòng đăng nhập lại.");
+        handleLogin();
+      }
+      setPin("");
       return;
     }
 
-    const roomID = pin.replace(/\s/g, "");
+    const roomID = customRoomID || pin.replace(/\s/g, "");
 
     // Validation
     if (!roomID) {
-      alert("Vui lòng nhập mã PIN để tham gia game");
+      if (!isAutoJoin) {
+        alert("Vui lòng nhập mã PIN để tham gia game");
+      }
+      setPin("");
       return;
     }
 
     if (roomID.length !== 6) {
-      alert("Mã PIN phải có đầy đủ 6 chữ số");
+      if (!isAutoJoin) {
+        alert("Mã PIN phải có đầy đủ 6 chữ số");
+      }
+      setPin("");
       return;
     }
 
     if (!/^\d+$/.test(roomID)) {
-      alert("Mã PIN chỉ được chứa các chữ số");
+      if (!isAutoJoin) {
+        alert("Mã PIN chỉ được chứa các chữ số");
+      }
+      setPin("");
       return;
     }
 
     try {
-      console.log("Joining room with OAuth token:", userToken);
-      setLoading(true); // show overlay while navigating
+      console.log("Validating and joining room:", roomID);
+      setLoading(true);
+
+      // Validate room before attempting to join
+      const roomValidation = await validateRoom(roomID, userToken);
+
+      if (!roomValidation.success) {
+        setLoading(false);
+
+        if (roomValidation.error === 'ROOM_NOT_FOUND') {
+          alert("Phòng không tồn tại. Vui lòng kiểm tra lại mã PIN.");
+        } else if (roomValidation.error === 'GAME_ALREADY_STARTED') {
+          alert("Phòng đã bắt đầu game. Không thể tham gia vào lúc này.");
+        } else if (roomValidation.error === 'ROOM_FULL') {
+          alert("Phòng đã đầy. Không thể tham gia.");
+        } else {
+          alert("Không thể tham gia phòng: " + (roomValidation.message || "Lỗi không xác định"));
+        }
+
+        // Clear PIN when validation fails
+        setPin("");
+        return;
+      }
+
+      // If validation passes, call the actual join room API
+      console.log("Room validation successful, calling join room API...");
+
+      const joinData = await joinRoomAPI(roomID, userToken);
+      console.log("Join room API successful:", joinData);
+
+      // If API join is successful, proceed to gameplay
+      console.log("Navigating to gameplay...");
       navigate("/gameplay", {
         state: {
           roomID: roomID,
           isHost: false,
           category: "Quiz",
-          token: userToken // Pass OAuth token
+          token: userToken
         }
       });
+
     } catch (err) {
-      console.error("Navigation error:", err);
+      console.error("Join room error:", err);
       setLoading(false);
-      alert("Lỗi join room: " + err.message);
+
+      let errorMessage = err.message;
+      if (err.message.includes('network') || err.message.includes('fetch')) {
+        errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.';
+      } else if (err.message.includes('timeout')) {
+        errorMessage = 'Kết nối timeout. Vui lòng thử lại sau.';
+      }
+
+      // Clear PIN on any caught error
+      setPin("");
+      alert(errorMessage);
     }
   };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoJoinTimer) {
+        clearTimeout(autoJoinTimer);
+      }
+    };
+  }, [autoJoinTimer]);
 
   // Fetch sub-navbar categories from server and ensure "Home" is first
   useEffect(() => {
@@ -457,21 +569,42 @@ export default function Home() {
               className="join-input"
               value={pin}
               onChange={handlePinChange}
+              disabled={isAutoJoining}
+              style={{
+                backgroundColor: isAutoJoining ? "#f0f0f0" : "white",
+                opacity: isAutoJoining ? 0.7 : 1
+              }}
             />
-            <Button
+            {/* <Button
               variant="contained"
-              onClick={handleJoinGame}
+              onClick={() => handleJoinGame()}
+              disabled={isAutoJoining}
               sx={{
                 ml: 1,
                 borderRadius: "20px",
                 fontWeight: 600,
-                backgroundColor: "#91d9bf",
+                backgroundColor: isAutoJoining ? "#ccc" : "#91d9bf",
                 color: "black",
-                "&:hover": { backgroundColor: "#81c8af" },
+                "&:hover": { backgroundColor: isAutoJoining ? "#ccc" : "#81c8af" },
+                "&:disabled": { backgroundColor: "#ccc", color: "#666" }
               }}
             >
-              Join
-            </Button>
+              {isAutoJoining ? "Joining..." : "Join"}
+            </Button> */}
+            {isAutoJoining && (
+              <div style={{
+                position: "absolute",
+                top: "100%",
+                left: "50%",
+                transform: "translateX(-50%)",
+                marginTop: "4px",
+                fontSize: "12px",
+                color: "#666",
+                whiteSpace: "nowrap"
+              }}>
+                Đang tham gia phòng...
+              </div>
+            )}
           </div>
 
           {/* Right side */}
@@ -479,10 +612,10 @@ export default function Home() {
             <div className="navbar-search">
             </div>
             {isLoading ? (
-              <div style={{ 
-                width: "120px", 
-                height: "40px", 
-                backgroundColor: "#f0f0f0", 
+              <div style={{
+                width: "120px",
+                height: "40px",
+                backgroundColor: "#f0f0f0",
                 borderRadius: "20px",
                 display: "flex",
                 alignItems: "center",
@@ -538,7 +671,7 @@ export default function Home() {
                     textTransform: "none",
                     borderColor: "#91d9bf",
                     color: "#91d9bf",
-                    "&:hover": { 
+                    "&:hover": {
                       borderColor: "#81c8af",
                       color: "#81c8af",
                       backgroundColor: "rgba(145, 217, 191, 0.1)"
@@ -610,17 +743,24 @@ export default function Home() {
             className="join-input"
             value={pin}
             onChange={handlePinChange}
+            disabled={isAutoJoining}
+            style={{
+              backgroundColor: isAutoJoining ? "#f0f0f0" : "white",
+              opacity: isAutoJoining ? 0.7 : 1
+            }}
           />
-          <Button
+          {/* <Button
             variant="contained"
-            onClick={handleJoinGame}
+            onClick={() => handleJoinGame()}
+            disabled={isAutoJoining}
             sx={{
               mt: 1,
               borderRadius: "20px",
               fontWeight: 600,
-              backgroundColor: "#91d9bf",
+              backgroundColor: isAutoJoining ? "#ccc" : "#91d9bf",
               color: "black",
-              "&:hover": { backgroundColor: "#81c8af" },
+              "&:hover": { backgroundColor: isAutoJoining ? "#ccc" : "#81c8af" },
+              "&:disabled": { backgroundColor: "#ccc", color: "#666" },
               "@media (max-width: 648px)": {
                 position: "absolute",
                 right: 15,
@@ -628,8 +768,8 @@ export default function Home() {
               },
             }}
           >
-            Join
-          </Button>
+            {isAutoJoining ? "Joining..." : "Join"}
+          </Button> */}
         </div>
       </div>
 
@@ -638,4 +778,5 @@ export default function Home() {
       </div>
     </div>
   );
+
 }

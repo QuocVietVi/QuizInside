@@ -4,7 +4,7 @@ import "./HomeContent.css";
 import Button from "@mui/material/Button";
 import HomeContentItem from "../../component/homeContentItem/HomeContentItem";
 import LeaderBoardItem from "../../component/leaderBoardItem/LeaderBoardItem";
-import { loadGlobalLeaderboard } from "../../services/gameService"; // <-- added import
+import { loadGlobalLeaderboard, loadPlayerStats } from "../../services/gameService"; // <-- added import
 
 
 export default function HomeContent({ isLoggedIn, userToken }) {
@@ -62,6 +62,7 @@ export default function HomeContent({ isLoggedIn, userToken }) {
     // New state for top players
     const [topPlayers, setTopPlayers] = useState([]);
     const [loadingTopPlayers, setLoadingTopPlayers] = useState(true);
+    const [playerStats, setPlayerStats] = useState(null);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -99,6 +100,23 @@ export default function HomeContent({ isLoggedIn, userToken }) {
         fetchTop();
         return () => { mounted = false; };
     }, []);
+
+    // Fetch player stats when logged in
+    useEffect(() => {
+        if (isLoggedIn && userToken) {
+            const fetchPlayerStats = async () => {
+                try {
+                    const result = await loadPlayerStats();
+                    if (result.success) {
+                        setPlayerStats(result.stats);
+                    }
+                } catch (error) {
+                    console.error('Failed to load player stats:', error);
+                }
+            };
+            fetchPlayerStats();
+        }
+    }, [isLoggedIn, userToken]);
 
     return (
         <div>
@@ -197,12 +215,12 @@ export default function HomeContent({ isLoggedIn, userToken }) {
                         <h1>Shop tích lũy</h1>
                         <div className="right-text-des">
                             <p>Dùng số điểm tích lũy được và đổi những phần quà hấp dẫn</p>
-                            <p>(Điểm của bạn: 100)</p>
+                            <p>(Điểm của bạn: {playerStats ? playerStats.total_score : 'Loading...'} ✨)</p>
                         </div>
 
                         <Button
                             variant="contained"
-                            onClick={() => navigate('/leaderboard')}
+                            onClick={() => navigate('/shop')}
                             className={isBouncing ? "bounce-button" : ""}
                             sx={{
                                 borderRadius: "25px",
@@ -225,8 +243,6 @@ export default function HomeContent({ isLoggedIn, userToken }) {
                                 "@media (max-width: 648px)": {
                                     marginTop: "15px",
                                     marginBottom: "15px",
-                                    
-
                                 },
                             }}>
                             View all

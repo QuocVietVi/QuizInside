@@ -199,7 +199,8 @@ export default function QuizItemGameplay({
                 onClick={() => handleSelect(idx)}
               >
                 {ans}
-                {disabledAll && idx === correctIndex && (
+                {/* Only show correct answer icon when correctIndex is explicitly set AND we've answered */}
+                {disabledAll && correctIndex !== null && correctIndex !== undefined && idx === correctIndex && hasAnsweredRef.current && (
                   <CheckCircleIcon
                     style={{
                       marginLeft: 8,

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import "./LeaderBoardGamePlay.css";
 
-export default function LeaderBoardGamePlay({ leaderboard = [], scoreAnimations = [], currentUserId }) {
+export default function LeaderBoardGamePlay({ leaderboard = [], scoreAnimations = [], currentUserId, isFinalLeaderboard = false }) {
     const [animatedPlayers, setAnimatedPlayers] = useState([]);
     const [twoColumn, setTwoColumn] = useState(false);
     const [animatingScores, setAnimatingScores] = useState({});
+    const [revealedTopThree, setRevealedTopThree] = useState([]);
+    const [showDramaticReveal, setShowDramaticReveal] = useState(false);
 
     // Enhanced player data with animations
     useEffect(() => {
@@ -17,6 +19,40 @@ export default function LeaderBoardGamePlay({ leaderboard = [], scoreAnimations 
 
         setAnimatedPlayers(playersWithEnhancedData);
     }, [leaderboard]);
+
+    // Dramatic top 3 reveal for final leaderboard
+    useEffect(() => {
+        if (isFinalLeaderboard && animatedPlayers.length >= 3) { // Only show if at least 3 players
+            setShowDramaticReveal(true);
+            setRevealedTopThree([]);
+            
+            // Reveal in reverse order for dramatic effect: 3rd, 2nd, 1st
+            const topThree = animatedPlayers.slice(0, 3);
+            
+            // Show 3rd place first
+            setTimeout(() => {
+                if (topThree[2]) setRevealedTopThree([topThree[2]]);
+            }, 1000);
+            
+            // Show 2nd place
+            setTimeout(() => {
+                if (topThree[1]) setRevealedTopThree(prev => [...prev, topThree[1]]);
+            }, 3000);
+            
+            // Show 1st place with extra fanfare
+            setTimeout(() => {
+                if (topThree[0]) setRevealedTopThree(prev => [...prev, topThree[0]]);
+            }, 5000);
+            
+            // Show remaining players
+            setTimeout(() => {
+                setShowDramaticReveal(false);
+            }, 590000);
+        } else if (isFinalLeaderboard && animatedPlayers.length < 3) {
+            // If less than 3 players, don't show dramatic reveal
+            setShowDramaticReveal(false);
+        }
+    }, [isFinalLeaderboard, animatedPlayers]);
 
     // Toggle two-column layout when width <= 1300px AND there are more than 5 items
     useEffect(() => {
@@ -66,6 +102,88 @@ export default function LeaderBoardGamePlay({ leaderboard = [], scoreAnimations 
     const getPlayerAnimation = (playerId) => {
         return animatingScores[playerId] || null;
     };
+
+    // Dramatic reveal rendering - only if we have at least 3 players
+    if (showDramaticReveal && isFinalLeaderboard && animatedPlayers.length >= 3) {
+        return (
+            <div className="leaderboard-container dramatic-reveal">
+                <div className="dramatic-title">
+                    <h1 className="final-results-title">🏆 KẾT QUẢ CUỐI CÙNG 🏆</h1>
+                </div>
+                
+                <div className="podium-container">
+                    {/* 3rd Place */}
+                    {revealedTopThree.length >= 1 && revealedTopThree.find(p => p.rank === 3) && (
+                        <div className="podium-item third-place animate-reveal">
+                            <div className="podium-player">
+                                <img 
+                                    src={revealedTopThree.find(p => p.rank === 3).avatar || `${import.meta.env.BASE_URL}avatar/avatar3.png`} 
+                                    alt="3rd place" 
+                                    className="podium-avatar"
+                                />
+                                <div className="podium-name">{revealedTopThree.find(p => p.rank === 3).nickname}</div>
+                                <div className="podium-score">{revealedTopThree.find(p => p.rank === 3).score} điểm</div>
+                            </div>
+                            <div className="podium-base third">
+                                <div className="podium-medal">🥉</div>
+                                <div className="podium-rank">3</div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* 1st Place */}
+                    {revealedTopThree.length >= 3 && revealedTopThree.find(p => p.rank === 1) && (
+                        <div className="podium-item first-place animate-reveal-winner">
+                            <div className="winner-crown">👑</div>
+                            <div className="podium-player winner">
+                                <img 
+                                    src={revealedTopThree.find(p => p.rank === 1).avatar || `${import.meta.env.BASE_URL}avatar/avatar1.png`} 
+                                    alt="1st place" 
+                                    className="podium-avatar winner-avatar"
+                                />
+                                <div className="podium-name winner-name">{revealedTopThree.find(p => p.rank === 1).nickname}</div>
+                                <div className="podium-score winner-score">{revealedTopThree.find(p => p.rank === 1).score} điểm</div>
+                            </div>
+                            <div className="podium-base first">
+                                <div className="podium-medal">🏆</div>
+                                <div className="podium-rank">1</div>
+                            </div>
+                            <div className="winner-particles">
+                                {[...Array(10)].map((_, i) => (
+                                    <div key={i} className="particle" style={{ '--delay': `${i * 0.2}s` }}></div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* 2nd Place */}
+                    {revealedTopThree.length >= 2 && revealedTopThree.find(p => p.rank === 2) && (
+                        <div className="podium-item second-place animate-reveal">
+                            <div className="podium-player">
+                                <img 
+                                    src={revealedTopThree.find(p => p.rank === 2).avatar || `${import.meta.env.BASE_URL}avatar/avatar2.png`} 
+                                    alt="2nd place" 
+                                    className="podium-avatar"
+                                />
+                                <div className="podium-name">{revealedTopThree.find(p => p.rank === 2).nickname}</div>
+                                <div className="podium-score">{revealedTopThree.find(p => p.rank === 2).score} điểm</div>
+                            </div>
+                            <div className="podium-base second">
+                                <div className="podium-medal">🥈</div>
+                                <div className="podium-rank">2</div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                
+                {revealedTopThree.length >= 3 && (
+                    <div className="dramatic-congratulations">
+                        <div className="congrats-text">🎉 Chúc mừng {revealedTopThree.find(p => p.rank === 1)?.nickname}! 🎉</div>
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     return (
         <div>

@@ -694,6 +694,91 @@ export async function importQuizzes(formData) {
   }
 }
 
+// ================== Room Validation ==================
+export async function validateRoom(roomID, token) {
+  try {
+    console.log("Validating room:", roomID);
+    
+    const response = await fetchWithRetry(`${baseUrl}/rooms`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Room validation error:', response.status, errorText);
+      
+      if (response.status === 401) {
+        return { success: false, error: 'UNAUTHORIZED', message: 'Vui lòng đăng nhập lại' };
+      }
+      
+      return { success: false, error: 'UNKNOWN_ERROR', message: errorText || 'Lỗi không xác định' };
+    }
+
+    const roomsData = await response.json();
+    console.log('Rooms data received:', roomsData);
+    
+    // Find the specific room by ID
+    const targetRoom = roomsData.find(room => room.id === roomID);
+    
+    if (!targetRoom) {
+      console.log(`Room ${roomID} not found in rooms list`);
+      return { success: false, error: 'ROOM_NOT_FOUND', message: 'Phòng không tồn tại' };
+    }
+    
+    console.log(`Found room ${roomID}:`, targetRoom);
+    
+    // Check room status
+    if (targetRoom.status === 'in_progress') {
+      return { success: false, error: 'GAME_ALREADY_STARTED', message: 'Game đã bắt đầu' };
+    }
+    
+    if (targetRoom.status === 'finished' || targetRoom.status === 'completed') {
+      return { success: false, error: 'GAME_FINISHED', message: 'Game đã kết thúc' };
+    }
+    
+    if (targetRoom.status !== 'waiting') {
+      return { success: false, error: 'ROOM_NOT_AVAILABLE', message: `Phòng không khả dụng (${targetRoom.status})` };
+    }
+    
+    // Additional checks - room capacity (assuming max 50 players or similar)
+    const maxPlayers = 50; // You can adjust this based on your game's limits
+    if (targetRoom.player_count >= maxPlayers) {
+      return { success: false, error: 'ROOM_FULL', message: 'Phòng đã đầy' };
+    }
+    
+    console.log(`Room ${roomID} is valid and can be joined`);
+    return { 
+      success: true, 
+      room: targetRoom,
+      canJoin: true
+    };
+    
+  } catch (error) {
+    console.error('Room validation network error:', error);
+    
+    // If validation fails due to network, we might still want to try joining
+    // but show a warning to the user
+    if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {
+      return { 
+        success: false, 
+        error: 'NETWORK_ERROR', 
+        message: 'Không thể kiểm tra trạng thái phòng. Vui lòng thử lại.' 
+      };
+    }
+    
+    return { 
+      success: false, 
+      error: 'VALIDATION_ERROR', 
+      message: error.message 
+    };
+  }
+}
+
 // ================== Room Management ==================
 export async function createRoom(token, category, onMessage, onError) {
   if (!token) throw new Error("Vui lòng nhập token.");
@@ -756,13 +841,27 @@ export async function joinRoom(roomID, token, onMessage, onError) {
   console.log("Joining room with token:", token.substring(0, 10) + "...");
 
   try {
-    // First, try to connect to WebSocket directly without API call
-    // Some servers handle room joining through WebSocket connection
-    console.log("Attempting to join room via WebSocket:", roomID);
-    isHost = false; // Make sure this is set to false for joiners
+    // First validate the room before attempting to join
+    const validation = await validateRoom(roomID, token);
+    if (!validation.success) {
+      if (validation.error === 'ROOM_NOT_FOUND') {
+        throw new Error("Phòng không tồn tại. Vui lòng kiểm tra lại mã PIN.");
+      } else if (validation.error === 'GAME_ALREADY_STARTED') {
+        throw new Error("Phòng đã bắt đầu game. Không thể tham gia vào lúc này.");
+      } else if (validation.error === 'ROOM_FULL') {
+        throw new Error("Phòng đã đầy. Không thể tham gia.");
+      } else if (validation.error === 'UNAUTHORIZED') {
+        throw new Error("Vui lòng đăng nhập lại để tham gia phòng.");
+      } else {
+        throw new Error(validation.message || "Không thể tham gia phòng.");
+      }
+    }
+
+    // If validation passes, proceed with WebSocket connection
+    console.log("Room validation passed, connecting to WebSocket:", roomID);
+    isHost = false;
     await connectToRoom(roomID, token, onMessage, onError);
     
-    // Return success response
     return { room_id: roomID };
     
   } catch (wsError) {
@@ -776,7 +875,6 @@ export async function joinRoom(roomID, token, onMessage, onError) {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
-        // Remove credentials: 'include' to avoid CORS issues
       });
 
       if (!response.ok) {
@@ -787,20 +885,33 @@ export async function joinRoom(roomID, token, onMessage, onError) {
           throw new Error("Token không hợp lệ. Vui lòng đăng nhập lại.");
         } else if (response.status === 403) {
           throw new Error("Không có quyền tham gia phòng. Vui lòng đăng nhập lại.");
+        } else if (response.status === 404) {
+          throw new Error("Phòng không tồn tại. Vui lòng kiểm tra lại mã PIN.");
+        } else if (response.status === 409) {
+          // Parse error to get specific reason
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData.code === 'GAME_ALREADY_STARTED') {
+              throw new Error("Phòng đã bắt đầu game. Không thể tham gia vào lúc này.");
+            } else if (errorData.code === 'ROOM_FULL') {
+              throw new Error("Phòng đã đầy. Không thể tham gia.");
+            }
+          } catch (parseError) {
+            // Fallback for unparseable error
+          }
+          
+          if (errorText.includes("already in room") || errorText.includes("đã ở trong phòng")) {
+            throw new Error("Bạn đã tham gia phòng này rồi. Vui lòng tải lại trang và thử lại.");
+          } else {
+            throw new Error("Không thể tham gia phòng. Phòng có thể đã bắt đầu hoặc đã đầy.");
+          }
         }
         
-        // Handle specific error messages
-        if (errorText.includes("already in room") || errorText.includes("đã ở trong phòng")) {
-          throw new Error("Bạn đã tham gia phòng này rồi. Vui lòng tải lại trang và thử lại.");
-        } else if (errorText.includes("not found") || errorText.includes("không tồn tại")) {
-          throw new Error("Phòng không tồn tại. Vui lòng kiểm tra lại mã PIN.");
-        } else {
-          throw new Error(errorText || "Không thể tham gia phòng.");
-        }
+        throw new Error(errorText || "Không thể tham gia phòng.");
       }
       
       const data = await response.json();
-      isHost = false; // Make sure this is set to false for joiners
+      isHost = false;
       
       // Connect to WebSocket after successful API join
       await connectToRoom(data.room_id, token, onMessage, onError);
@@ -861,6 +972,7 @@ export function connectToRoom(roomID, token, onMessage, onError) {
     }
 
     const wsUrl = `${wsBaseUrl}/${roomID}?token=${token}`;
+
     console.log("Attempting WebSocket connection to:", wsUrl);
     console.log("User is host:", isHost);
 
@@ -887,14 +999,14 @@ export function connectToRoom(roomID, token, onMessage, onError) {
         console.log("Token:", token.substring(0, 10) + "...");
         console.log("Is Host:", isHost);
         
-        // Send appropriate message based on user type
+        // Gửi message với payload tối thiểu (không có token, vì token đã được gửi trong URL)
         if (!isHost) {
           try {
             const joinMessage = {
               type: "join_room",
               payload: { 
-                room_id: roomID,
-                user_token: token // Include token in payload
+                room_id: roomID
+                // Không gửi token ở đây nữa
               }
             };
             ws.send(JSON.stringify(joinMessage));
@@ -907,8 +1019,8 @@ export function connectToRoom(roomID, token, onMessage, onError) {
             const createMessage = {
               type: "create_room",
               payload: { 
-                room_id: roomID,
-                user_token: token // Include token in payload
+                room_id: roomID
+                // Không gửi token ở đây nữa
               }
             };
             ws.send(JSON.stringify(createMessage));
@@ -937,6 +1049,16 @@ export function connectToRoom(roomID, token, onMessage, onError) {
               if (onError) onError(error);
               return;
             }
+            
+            // Xử lý lỗi message too large từ server
+            if (message.message && 
+                (message.message.includes("message too big") || 
+                 message.message.includes("payload too large") ||
+                 message.message.includes("quá nhiều dữ liệu"))) {
+              const error = new Error("Phòng có quá nhiều người chơi hoặc dữ liệu quá lớn. Vui lòng thử phòng khác có ít người hơn.");
+              if (onError) onError(error);
+              return;
+            }
           }
           
           if (onMessage) onMessage(message);
@@ -957,6 +1079,14 @@ export function connectToRoom(roomID, token, onMessage, onError) {
             code: event.code,
             reason: event.reason
           });
+        }
+
+        // Xử lý lỗi 1009 (Message Too Large) - không retry
+        if (event.code === 1009) {
+          console.error("WebSocket closed due to message too large (1009)");
+          const error = new Error("Phòng có quá nhiều người chơi hoặc dữ liệu quá lớn. Vui lòng thử phòng khác có ít người hơn.");
+          if (onError) onError(error);
+          return;
         }
 
         // Don't retry if it was intentional closure or specific error codes
@@ -1127,4 +1257,75 @@ if (typeof window !== 'undefined') {
       checkSessionIfNeeded();
     }
   }, 10 * 60 * 1000);
+}
+
+// ================== Room Management ==================
+export async function joinRoomAPI(roomID, token) {
+  if (!roomID || !token) throw new Error("Vui lòng nhập đủ mã phòng và token.");
+  
+  // Check if user is logged in for web version
+  if (!isLoggedIn || !currentUser) {
+    throw new Error("Vui lòng đăng nhập để tham gia phòng.");
+  }
+
+  // Validate roomID format
+  if (roomID.length !== 6 || !/^\d+$/.test(roomID)) {
+    throw new Error("Mã phòng phải có 6 chữ số.");
+  }
+
+  console.log("Calling join room API for room:", roomID);
+
+  try {
+    const response = await fetchWithRetry(`${baseUrl}/rooms/${roomID}/join`, {
+      method: "POST", 
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Join room API error:", errorText);
+      
+      if (response.status === 401) {
+        throw new Error("Token không hợp lệ. Vui lòng đăng nhập lại.");
+      } else if (response.status === 403) {
+        throw new Error("Không có quyền tham gia phòng. Vui lòng đăng nhập lại.");
+      } else if (response.status === 404) {
+        throw new Error("Phòng không tồn tại. Vui lòng kiểm tra lại mã PIN.");
+      } else if (response.status === 409) {
+        // Parse error to get specific reason
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.code === 'GAME_ALREADY_STARTED') {
+            throw new Error("Phòng đã bắt đầu game. Không thể tham gia vào lúc này.");
+          } else if (errorData.code === 'ROOM_FULL') {
+            throw new Error("Phòng đã đầy. Không thể tham gia.");
+          } else if (errorData.code === 'ALREADY_IN_ROOM') {
+            throw new Error("Bạn đã tham gia phòng này rồi. Vui lòng tải lại trang và thử lại.");
+          }
+        } catch (parseError) {
+          // Fallback for unparseable error
+        }
+        
+        if (errorText.includes("already in room") || errorText.includes("đã ở trong phòng")) {
+          throw new Error("Bạn đã tham gia phòng này rồi. Vui lòng tải lại trang và thử lại.");
+        } else {
+          throw new Error("Không thể tham gia phòng. Phòng có thể đã bắt đầu hoặc đã đầy.");
+        }
+      }
+      
+      throw new Error(errorText || "Không thể tham gia phòng.");
+    }
+    
+    const data = await response.json();
+    console.log("Join room API successful:", data);
+    return data;
+    
+  } catch (error) {
+    console.error("Join room API failed:", error);
+    throw error;
+  }
 }

@@ -31,15 +31,17 @@
     align-items: center;
     padding: 20px;
 }
-.homeBtn{
+
+.homeBtn {
     position: absolute;
     left: 20px;
     top: 20px;
-    width: 50px !important;
-    height: auto !important;
+    width: 62px !important;
+    height: 60px !important;
     border-radius: 50%;
     color: rgb(243, 50, 50);
 }
+
 .leaderboard-page-header h1 {
     color: white;
     margin: 0;
@@ -133,6 +135,10 @@
     color: #2ecc71;
 }
 
+.homeBtn-icon {
+    font-size: 28px !important;
+}
+
 @media (max-width: 1300px) {
     .leaderboard-item {
         display: flex;
@@ -162,7 +168,7 @@
 /* Mobile responsiveness */
 @media (max-width: 768px) {
     .leaderboard-page-header {
-        padding: 15px;
+        padding: 18px;
     }
 
     .leaderboard-page-header h1 {
@@ -181,5 +187,79 @@
 
     .my-rank-left {
         justify-content: center;
+    }
+
+    .homeBtn {
+        position: absolute;
+        left: 10px;
+        top: 8px;
+        width: 47px !important;
+        height: 45px !important;
+        border-radius: 50%;
+    }
+
+    .homeBtn-icon {
+        font-size: 22px !important;
+    }
+
+    .lb-left {
+        gap: 1px;
+        margin-left: -15px;
+    }
+
+    .leaderboard-ava-gameplay {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 4px solid #34495e;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow:
+            0 4px 15px rgba(52, 73, 94, 0.4),
+            inset 0 2px 4px rgba(255, 255, 255, 0.3);
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .lb-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        /* giữ tỉ lệ, cắt phần thừa */
+        display: block;
+        justify-self: center;
+    }
+
+    .lb-name {
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .leaderboard-item:nth-child(1) .lb-name {
+        color: #8b4513;
+        font-size: 15px;
+        text-shadow:
+            1px 1px 0 #fff,
+            2px 2px 4px rgba(0, 0, 0, 0.2);
+        font-weight: bold;
+    }
+
+    .lb-score {
+        font-size: 15px;
+    }
+
+    .leaderboard-item:nth-child(1) .lb-score {
+        color: #8b4513;
+        font-size: 20px;
+    }
+
+    .leaderboard-item:nth-child(2) .lb-score {
+        color: #8b4513;
+        font-size: 20px;
+    }
+
+    .leaderboard-item:nth-child(3) .lb-score {
+        color: #8b4513;
+        font-size: 20px;
     }
 }
